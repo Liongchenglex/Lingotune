@@ -3,8 +3,9 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// TODO: Replace with your Firebase config
-// Get these values from Firebase Console > Project Settings > General
+// Firebase configuration loaded from environment variables
+// Environment is determined by EXPO_PUBLIC_ENV (development/production)
+// Configuration values come from .env.development or .env.production
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -13,6 +14,11 @@ const firebaseConfig = {
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
+
+// Log current environment (useful for debugging)
+const currentEnv = process.env.EXPO_PUBLIC_ENV || 'development';
+console.log(`🔥 Firebase initialized in ${currentEnv} mode`);
+console.log(`📦 Project ID: ${firebaseConfig.projectId}`);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

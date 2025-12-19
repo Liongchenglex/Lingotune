@@ -33,6 +33,10 @@ yarn-error.*
 # local env files
 .env*.local
 .env
+# Keep template files but ignore actual environment configs
+!.env.example
+!.env.development
+!.env.production
 
 # typescript
 *.tsbuildinfo

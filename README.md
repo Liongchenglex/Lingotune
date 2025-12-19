@@ -20,9 +20,10 @@ A mobile application built with Expo and Firebase.
    ```
 
 3. Set up Firebase:
-   - Create a new Firebase project at https://console.firebase.google.com
-   - Enable Authentication, Firestore, and Storage in your Firebase project
-   - Copy `.env.example` to `.env` and fill in your Firebase configuration values
+   - Create two Firebase projects at https://console.firebase.google.com (staging and production)
+   - Enable Authentication, Firestore, and Storage in both projects
+   - Fill in your Firebase credentials in `.env.development` (staging) and `.env.production`
+   - See `ENV_SETUP.md` for detailed environment configuration instructions
 
 4. Start the development server:
    ```bash
@@ -58,15 +59,14 @@ lingotune/
 - Firebase Storage
 - Basic authentication flow
 
-## Firebase Setup
+## Environment Configuration
 
-After creating your Firebase project:
+This project uses separate environments for development and production:
 
-1. Go to Project Settings > General
-2. Add an iOS app and/or Android app
-3. Download and note your configuration values
-4. Update the `.env` file with your Firebase credentials
-5. Enable Email/Password authentication in Firebase Console > Authentication > Sign-in method
+- **Development**: Uses `.env.development` with staging Firebase project
+- **Production**: Uses `.env.production` with production Firebase project
+
+For detailed setup instructions, see `ENV_SETUP.md`.
 
 ## Git Workflow
 
@@ -84,27 +84,84 @@ This project uses a two-branch workflow:
   - Main development branch where features are integrated
   - Merge feature branches here first
 
-### Workflow
+### Development Workflow
 
-1. Create feature branches from `develop`:
-   ```bash
-   git checkout develop
-   git checkout -b feature/your-feature-name
-   ```
+#### 1. Working on Features (develop branch)
 
-2. Work on your feature and commit changes
+Create feature branches from `develop`:
+```bash
+git checkout develop
+git checkout -b feature/your-feature-name
+```
 
-3. When ready, merge back to `develop`:
-   ```bash
-   git checkout develop
-   git merge feature/your-feature-name
-   ```
+**Run locally with staging environment:**
+```bash
+npm start
+# or explicitly
+npm run start:dev
+```
+- Loads `.env.development`
+- Connects to staging Firebase project
+- Safe for testing without affecting production data
 
-4. After testing on staging, merge `develop` to `main`:
-   ```bash
-   git checkout main
-   git merge develop
-   ```
+#### 2. Testing Feature on Staging
+
+When ready, merge back to `develop`:
+```bash
+git checkout develop
+git merge feature/your-feature-name
+```
+
+**Build staging app for TestFlight/internal testing:**
+```bash
+# Install EAS CLI (first time only)
+npm install -g eas-cli
+eas login
+
+# Build for iOS staging
+eas build --platform ios --profile development
+
+# Build for Android staging
+eas build --platform android --profile development
+```
+- Uses `.env.development` (staging Firebase)
+- Internal distribution for testing
+
+#### 3. Promoting to Production (main branch)
+
+After thorough testing on staging, merge `develop` to `main`:
+```bash
+git checkout main
+git merge develop
+```
+
+**Build production app for App Store/Play Store:**
+```bash
+# Build production iOS
+eas build --platform ios --profile production
+
+# Build production Android
+eas build --platform android --profile production
+```
+- Uses `.env.production` (production Firebase)
+- Suitable for App Store/Play Store submission
+
+**Submit to stores:**
+```bash
+# Submit to App Store
+eas submit --platform ios
+
+# Submit to Play Store
+eas submit --platform android
+```
+
+### Environment Loading Summary
+
+| Command | Branch | Env File | Firebase Project | Use Case |
+|---------|--------|----------|------------------|----------|
+| `npm start` | develop | `.env.development` | Staging | Local development |
+| `eas build --profile development` | develop | `.env.development` | Staging | TestFlight/internal |
+| `eas build --profile production` | main | `.env.production` | Production | App Store/Play Store |
 
 ### Current Branch
 
