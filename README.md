@@ -68,6 +68,48 @@ After creating your Firebase project:
 4. Update the `.env` file with your Firebase credentials
 5. Enable Email/Password authentication in Firebase Console > Authentication > Sign-in method
 
+## Git Workflow
+
+This project uses a two-branch workflow:
+
+### Branches
+
+- **main** - Production branch
+  - Deployed to production environment
+  - Only merge from `develop` after thorough testing
+  - All commits should be stable and production-ready
+
+- **develop** - Staging branch
+  - Deployed to staging environment for testing
+  - Main development branch where features are integrated
+  - Merge feature branches here first
+
+### Workflow
+
+1. Create feature branches from `develop`:
+   ```bash
+   git checkout develop
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Work on your feature and commit changes
+
+3. When ready, merge back to `develop`:
+   ```bash
+   git checkout develop
+   git merge feature/your-feature-name
+   ```
+
+4. After testing on staging, merge `develop` to `main`:
+   ```bash
+   git checkout main
+   git merge develop
+   ```
+
+### Current Branch
+
+You are currently on the `develop` branch. Use this for all development work.
+
 ## License
 
 Private
