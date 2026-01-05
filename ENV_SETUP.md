@@ -36,16 +36,30 @@ For each project:
 
 #### Getting Firebase Configuration
 
-For each Firebase project, get the Web SDK config (not iOS/Android config):
+You can get Firebase config values in two ways:
 
+**Option A: From Web SDK Config (Recommended)**
 1. Go to Firebase Console → Your project
 2. Click Settings (gear icon) → Project Settings
 3. Scroll to "Your apps" section
 4. Click "Add app" → Select **Web** (</> icon)
 5. Register your app with a nickname (e.g., "LingoTune Web")
-6. Copy the `firebaseConfig` object values
+6. Copy the `firebaseConfig` object values directly
 
-**Important:** Use the **Web** app configuration, not iOS or Android. The values will look like this in the Firebase Console.
+**Option B: From iOS App Config (GoogleService-Info.plist)**
+
+If you already have an iOS app registered and downloaded `GoogleService-Info.plist`, you can extract the values:
+
+| .env Variable | GoogleService-Info.plist Key |
+|---------------|------------------------------|
+| `EXPO_PUBLIC_FIREBASE_API_KEY` | `API_KEY` |
+| `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN` | `{PROJECT_ID}.firebaseapp.com` |
+| `EXPO_PUBLIC_FIREBASE_PROJECT_ID` | `PROJECT_ID` |
+| `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET` | `STORAGE_BUCKET` |
+| `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | `GCM_SENDER_ID` |
+| `EXPO_PUBLIC_FIREBASE_APP_ID` | `GOOGLE_APP_ID` |
+
+**Note:** The AUTH_DOMAIN is constructed as `{PROJECT_ID}.firebaseapp.com`
 
 #### Development/Staging (`.env.development`)
 
@@ -63,19 +77,36 @@ EXPO_PUBLIC_FIREBASE_APP_ID=your_staging_app_id
 
 #### Production (`.env.production`)
 
-1. Go to Firebase Console → Your production project
-2. Click Settings → Project Settings
-3. Copy configuration values to `.env.production`:
+Follow the same process for your **production** Firebase project:
 
+**Option A: From Web SDK Config**
+1. Go to Firebase Console → Your **production** project
+2. Click Settings → Project Settings
+3. Scroll to "Your apps" → Add Web app or view existing
+4. Copy the `firebaseConfig` values to `.env.production`
+
+**Option B: From iOS Production App**
+1. Go to Firebase Console → Your **production** project
+2. Add iOS app (or download config from existing iOS app)
+3. Download `GoogleService-Info.plist` for production
+4. Extract values using the mapping table above
+
+**Example `.env.production`:**
 ```env
 EXPO_PUBLIC_ENV=production
 EXPO_PUBLIC_FIREBASE_API_KEY=your_prod_api_key
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-prod-project.firebaseapp.com
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-prod-project
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-prod-project.appspot.com
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-prod-project.firebasestorage.app
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_prod_sender_id
-EXPO_PUBLIC_FIREBASE_APP_ID=your_prod_app_id
+EXPO_PUBLIC_FIREBASE_APP_ID=1:your_prod_sender_id:ios:your_prod_app_id
 ```
+
+**Important:** Keep production and staging configurations separate! Use different:
+- Firebase project IDs
+- Storage buckets
+- App IDs
+- Bundle identifiers (e.g., `com.yourcompany.lingotune` for prod, `com.yourcompany.lingotune.staging` for staging)
 
 ## Usage
 
@@ -227,10 +258,43 @@ Check the console logs to see which project ID is being used. The environment sh
 
 **For this Expo project:** Only register a **Web app** in Firebase Console and use those values in your `.env` files.
 
+## Managing Multiple Environment Configs
+
+### Best Practice Workflow
+
+1. **Download both GoogleService-Info.plist files** (keep them separate)
+   ```bash
+   # Download from Firebase Console and rename locally
+   GoogleService-Info-staging.plist
+   GoogleService-Info-production.plist
+   ```
+
+2. **Extract staging values** → `.env.development`
+   - Use values from `GoogleService-Info-staging.plist`
+   - Or use Web SDK config from staging Firebase project
+
+3. **Extract production values** → `.env.production`
+   - Use values from `GoogleService-Info-production.plist`
+   - Or use Web SDK config from production Firebase project
+
+4. **Keep plist files secure**
+   - Both plist files are in `.gitignore`
+   - Store them securely (1Password, LastPass, etc.)
+   - Don't commit them to version control
+
+### Quick Reference
+
+| Environment | Branch | Config File | Firebase Project | Bundle ID |
+|-------------|--------|-------------|------------------|-----------|
+| Staging | `develop` | `.env.development` | lingoleap---staging | com.lexcheng.lingotune.staging |
+| Production | `main` | `.env.production` | lingoleap-prod (create this) | com.lexcheng.lingotune |
+
 ## Next Steps
 
-1. Create **Web apps** in both Firebase projects (staging and production)
-2. Fill in your actual Firebase **Web SDK** credentials in both `.env` files
-3. Test locally with staging environment
-4. Set up EAS Build for TestFlight/App Store distribution
-5. Configure Firebase Security Rules for both projects
+1. ✅ Staging configured (`.env.development` has values)
+2. ⏳ Create production Firebase project
+3. ⏳ Download production `GoogleService-Info.plist` or get Web SDK config
+4. ⏳ Fill in `.env.production` with production values
+5. ⏳ Test locally with staging environment (`npm start`)
+6. ⏳ Set up EAS Build for TestFlight/App Store distribution
+7. ⏳ Configure Firebase Security Rules for both projects

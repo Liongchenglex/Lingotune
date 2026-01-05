@@ -38,6 +38,10 @@ yarn-error.*
 !.env.development
 !.env.production
 
+# Firebase config files (contain credentials)
+GoogleService-Info.plist
+google-services.json
+
 # typescript
 *.tsbuildinfo
 
