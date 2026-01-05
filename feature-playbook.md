@@ -122,8 +122,11 @@ Ownership enforced on:
 ```
 
 ---
+## 8. Coding Patterns Used
+- <pattern name>
 
-## 8. Known Tradeoffs / Debt
+
+## 9. Known Tradeoffs / Debt
 
 ```md
 ## Tradeoffs

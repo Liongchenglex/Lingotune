@@ -32,7 +32,7 @@ If unsure → **STOP and ASK**.
 5. Architecture & Data Design
    → 🔒 Gate: *Architecture approved*
 6. Security Review (Early) ( must follow `security-playbook.md`)
-7. Implementation ( need to be documented in `technical-requirement-playbook.md`)
+7. Implementation ( documentation need to follow `technical-requirement-playbook.md`)
 8. UI Execution & Polish ( must follow `ui-ux-playbook.md`)
 9. Security Review (Final)
 10. Test Case Definition
@@ -41,6 +41,18 @@ If unsure → **STOP and ASK**.
 13. Ship
 
 AI **must not proceed past any gate without explicit user approval**.
+
+### Feature Documentation Rule (Mandatory)
+
+- For any **non-trivial feature**, a `feature.md` **must exist**
+- Before modifying or extending a feature, AI **must read `feature-playbook.md`**
+- `feature.md` is the source of truth for:
+  - where the feature lives
+  - what files it touches
+  - data ownership & dependencies
+
+AI **must not introduce new files, APIs, or responsibilities**
+without updating `feature.md`.
 
 ---
 

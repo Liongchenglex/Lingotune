@@ -29,7 +29,6 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
-    plugins: ['@react-native-async-storage/async-storage'],
     extra: {
       // Expose environment to the app
       env: process.env.EXPO_PUBLIC_ENV || 'development',
