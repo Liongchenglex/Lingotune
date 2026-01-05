@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Learning Dashboard</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#0dccf2",
+              "primary-dark": "#0ab8da",
+              "background-light": "#f5f8f8",
+              "background-dark": "#101f22",
+              "card-light": "#ffffff",
+              "card-dark": "#1a2c30",
+              "text-main-light": "#0d191c",
+              "text-main-dark": "#e0f7fa",
+              "text-sub-light": "#498e9c",
+              "text-sub-dark": "#8ebcc6",
+            },
+            fontFamily: {
+              "display": ["Spline Sans", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "1rem", 
+              "lg": "1.5rem", 
+              "xl": "2rem", 
+              "2xl": "2.5rem",
+              "full": "9999px"
+            },
+            boxShadow: {
+                "soft": "0 4px 20px -2px rgba(13, 204, 242, 0.1)",
+                "card": "0 2px 10px rgba(0, 0, 0, 0.03)",
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: "Spline Sans", sans-serif;
+        }
+        /* Custom scrollbar hiding for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark antialiased selection:bg-primary selection:text-white">
+<div class="relative flex h-full min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark shadow-2xl overflow-hidden pb-24">
+<!-- TopAppBar -->
+<header class="flex items-center px-6 pt-6 pb-2 justify-between z-10">
+<button class="flex size-10 items-center justify-center rounded-full bg-white dark:bg-card-dark shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-text-main-light dark:text-text-main-dark">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">Learning Map</h2>
+<button class="flex size-10 items-center justify-center rounded-full bg-transparent hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-text-sub-light dark:text-text-sub-dark">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</header>
+<!-- Scrollable Content -->
+<main class="flex-1 overflow-y-auto no-scrollbar px-5 pt-2">
+<!-- Hero Section (ProfileHeader Variant) -->
+<div class="flex flex-col items-center gap-4 py-6">
+<!-- Album Art with "Vinyl" vibe shadow -->
+<div class="relative group cursor-pointer">
+<div class="absolute inset-0 bg-primary blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full"></div>
+<div class="relative size-40 rounded-full border-4 border-white dark:border-card-dark shadow-soft overflow-hidden animate-spin-slow" style="animation-duration: 20s;">
+<div class="bg-center bg-no-repeat w-full h-full bg-cover" data-alt="Colorful abstract album art with geometric shapes" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCEtMQZardEcXYl9RinERXCcDrSs8hUwJ_fEgz7NxkmPpx6D1e7ELHDNBODhGeHNPueA43QBcQtCsYR-21koECbXifcX25_ZyYRKWPi3fE6bGbmwoZJYjblxYdid4hCrzKusd3LYawPOZzkUe-ZS1_HEu__USp965ga31ei4jaO3erULv1AJX0pVLYlSasmSR5iIxfggE069EuX0IRtu6HRgsaTaOkE4yGW2sJ-l2SAkgZIRiOz_1_efe4iNIk3pGhLVmPaN9whGUM");'>
+</div>
+<!-- Vinyl hole center -->
+<div class="absolute inset-0 m-auto size-3 bg-background-light dark:bg-background-dark rounded-full border border-gray-200 dark:border-gray-700"></div>
+</div>
+</div>
+<div class="flex flex-col items-center text-center">
+<h1 class="text-2xl font-bold leading-tight tracking-tight mb-1">Levitating</h1>
+<div class="flex items-center gap-2 text-text-sub-light dark:text-text-sub-dark text-sm font-medium">
+<span>Dua Lipa</span>
+<span class="size-1 rounded-full bg-primary"></span>
+<span>Pop • 2020</span>
+</div>
+</div>
+</div>
+<!-- ProgressBar -->
+<div class="flex flex-col gap-2 mb-6 bg-white dark:bg-card-dark p-5 rounded-xl shadow-card">
+<div class="flex justify-between items-end">
+<span class="text-sm font-bold text-text-main-light dark:text-text-main-dark">Song Mastery</span>
+<span class="text-xs font-bold text-primary">15%</span>
+</div>
+<div class="h-3 rounded-full bg-background-light dark:bg-background-dark overflow-hidden">
+<div class="h-full rounded-full bg-primary transition-all duration-1000 ease-out" style="width: 15%;"></div>
+</div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark mt-1">Keep going! You're just getting started.</p>
+</div>
+<!-- Mascot Interaction (SingleMessage Variant) -->
+<div class="flex items-end gap-3 mb-8">
+<div class="relative shrink-0">
+<div class="absolute -inset-1 bg-primary/30 rounded-full blur-md animate-pulse"></div>
+<div class="relative bg-center bg-no-repeat bg-cover rounded-full size-12 border-2 border-white dark:border-card-dark" data-alt="Cute blue robot mascot head" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBQOm-KON3ZsinJFX7l8lR5DHhoxDm5hBPl64I4SZUPP3sxIkfWI0Kp0O4m6706xtp6nLcihFuRR3TwdPTduttAHXyxNr3xnBX3Y1uoRom887E5G-FnT_vcylcToi0tz2iiHowUbj4jrXzZUIoHOL7q8Bvqx50bCO9c4oI-chs-p3ixzyNVe7UdZhEtDk_ACznnd--kguxyTujzhRk9A4u2gTM4_3Iw_6c-HniNRkqW6ammkn-4aGMrtwjuDeLuVTl8if8DwswSqAk");'>
+</div>
+</div>
+<div class="relative flex-1 bg-primary/10 dark:bg-primary/20 rounded-2xl rounded-bl-none p-4 shadow-sm">
+<p class="text-sm font-medium leading-relaxed text-text-main-light dark:text-text-main-dark">
+                        Analysis complete! Let's crack the <span class="text-primary-dark dark:text-primary font-bold">Lyrics</span> module first to understand the slang.
+                    </p>
+</div>
+</div>
+<!-- Learning Modules Header -->
+<div class="flex items-center justify-between px-1 mb-4">
+<h3 class="text-lg font-bold">Learning Modules</h3>
+<span class="text-xs font-semibold px-2 py-1 bg-gray-100 dark:bg-white/5 rounded-lg text-text-sub-light dark:text-text-sub-dark">1/6 Unlocked</span>
+</div>
+<!-- Modules List -->
+<div class="flex flex-col gap-4">
+<!-- Module 1: Active -->
+<div class="group relative overflow-hidden bg-white dark:bg-card-dark p-4 rounded-2xl shadow-card flex items-center gap-4 transition-transform active:scale-[0.98]">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="size-12 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-base text-text-main-light dark:text-text-main-dark">Lyrics Understanding</h4>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Break down the words</p>
+</div>
+<button class="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">play_arrow</span>
+</button>
+</div>
+<!-- Module 2: Locked -->
+<div class="relative bg-white/60 dark:bg-card-dark/60 p-4 rounded-2xl flex items-center gap-4 border border-transparent hover:border-gray-200 dark:hover:border-white/10 transition-colors">
+<div class="size-12 shrink-0 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined">style</span>
+</div>
+<div class="flex-1 opacity-60">
+<h4 class="font-bold text-base text-text-main-light dark:text-text-main-dark">Vocabulary Builder</h4>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Learn new words</p>
+</div>
+<div class="size-8 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+</div>
+<!-- Module 3: Locked -->
+<div class="relative bg-white/60 dark:bg-card-dark/60 p-4 rounded-2xl flex items-center gap-4 border border-transparent hover:border-gray-200 dark:hover:border-white/10 transition-colors">
+<div class="size-12 shrink-0 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined">extension</span>
+</div>
+<div class="flex-1 opacity-60">
+<h4 class="font-bold text-base text-text-main-light dark:text-text-main-dark">Grammar in Context</h4>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Structure &amp; rules</p>
+</div>
+<div class="size-8 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+</div>
+<!-- Module 4: Locked -->
+<div class="relative bg-white/60 dark:bg-card-dark/60 p-4 rounded-2xl flex items-center gap-4 border border-transparent hover:border-gray-200 dark:hover:border-white/10 transition-colors">
+<div class="size-12 shrink-0 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined">mic</span>
+</div>
+<div class="flex-1 opacity-60">
+<h4 class="font-bold text-base text-text-main-light dark:text-text-main-dark">Pronunciation</h4>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Speak like a local</p>
+</div>
+<div class="size-8 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+</div>
+<!-- Module 5: Locked -->
+<div class="relative bg-white/60 dark:bg-card-dark/60 p-4 rounded-2xl flex items-center gap-4 border border-transparent hover:border-gray-200 dark:hover:border-white/10 transition-colors">
+<div class="size-12 shrink-0 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined">sentiment_satisfied</span>
+</div>
+<div class="flex-1 opacity-60">
+<h4 class="font-bold text-base text-text-main-light dark:text-text-main-dark">Emotional Interpretation</h4>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark">Feel the vibe</p>
+</div>
+<div class="size-8 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+</div>
+<!-- Boss Level: Sing-Along (Bottom of list) -->
+<div class="relative mt-2 p-1 rounded-[2rem] bg-gradient-to-r from-gray-200 to-gray-300 dark:from-white/5 dark:to-white/10 opacity-70 grayscale">
+<div class="bg-background-light dark:bg-card-dark rounded-[1.8rem] p-5 flex flex-col items-center gap-3 text-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+<div class="size-14 shrink-0 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 mb-1">
+<span class="material-symbols-outlined text-3xl">queue_music</span>
+</div>
+<div>
+<h4 class="font-bold text-lg text-text-main-light dark:text-text-main-dark">Mastery Test &amp; Sing-Along</h4>
+<p class="text-sm text-text-sub-light dark:text-text-sub-dark">Complete all modules to unlock the final stage!</p>
+</div>
+</div>
+</div>
+<!-- Spacer for bottom nav -->
+<div class="h-24"></div>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="absolute bottom-0 w-full bg-white dark:bg-card-dark border-t border-gray-100 dark:border-white/5 px-6 py-4 flex justify-between items-center z-20 rounded-t-[2rem] shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)]">
+<button class="flex flex-col items-center gap-1 text-primary group">
+<div class="size-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">home</span>
+</div>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-text-main-light dark:hover:text-text-main-dark transition-colors">
+<span class="material-symbols-outlined">library_music</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-text-main-light dark:hover:text-text-main-dark transition-colors">
+<span class="material-symbols-outlined">leaderboard</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-text-main-light dark:hover:text-text-main-dark transition-colors">
+<span class="material-symbols-outlined">person</span>
+</button>
+</nav>
+</div>
+</body></html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Home Screen - Language Learning App</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0dccf2",
+                        "primary-dark": "#0bb4d6",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#101f22",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2c30",
+                        "text-main": "#0d191c",
+                        "text-sub": "#498e9c",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "1.5rem", "xl": "2rem", "2xl": "2.5rem", "full": "9999px"},
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 15px rgba(13, 204, 242, 0.3)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar hide for cleaner UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-white font-display antialiased selection:bg-primary selection:text-white">
+<div class="relative mx-auto flex h-full min-h-screen w-full max-w-[480px] flex-col overflow-x-hidden bg-background-light dark:bg-background-dark pb-24 group/design-root">
+<!-- Header: Avatar & Greeting + Stats Pills -->
+<header class="sticky top-0 z-30 flex items-center justify-between bg-background-light/90 dark:bg-background-dark/90 px-5 py-4 backdrop-blur-md">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 ring-2 ring-white dark:ring-surface-dark shadow-sm" data-alt="User profile avatar of a smiling person" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCCksc7JUpDue9oPJVaqCPqIYktZeXZwbRWiCI2glgwyA4Wg8CQGrRRmgCUE9u02dcUlSYTmGivqk0lCYIgH5jBr_-XjN997CLu5A1RU7Y1A_7CYBjiGvLRKb45ojXd3upK8e1PgjsDPVtYiGPbaxDUcM_TZllpwa_O8A-EeH5Ttkqzl7negpMrAFVpCI3ooNzM_i8rBeVNl_SNO2EwZVm-r31c1qJus4VKtdScYWNKkuH28JA71llMa1Wi_7gLpz5brAj530BA1pk");'>
+</div>
+<div class="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-green-500 border-2 border-white dark:border-surface-dark"></div>
+</div>
+<div class="flex flex-col">
+<h2 class="text-text-main dark:text-white text-lg font-bold leading-tight tracking-tight">Hola, Alex!</h2>
+<p class="text-text-sub text-xs font-medium">Level 5 • Spanish</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<!-- Streak Pill -->
+<div class="flex items-center gap-1.5 rounded-full bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 px-3 py-1.5 shadow-sm">
+<span class="material-symbols-outlined text-orange-500 text-[18px]">local_fire_department</span>
+<span class="text-sm font-bold text-text-main dark:text-white">7</span>
+</div>
+<!-- Currency Pill -->
+<div class="flex items-center gap-1.5 rounded-full bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 px-3 py-1.5 shadow-sm">
+<span class="material-symbols-outlined text-primary text-[18px]">music_note</span>
+<span class="text-sm font-bold text-text-main dark:text-white">450</span>
+</div>
+</div>
+</header>
+<!-- Main Content Scroll Area -->
+<main class="flex flex-col gap-6 px-5 pt-2">
+<!-- Hero Section: Mascot & CTA -->
+<section class="relative flex flex-col items-center">
+<!-- Mascot Image Container -->
+<div class="relative w-full overflow-hidden rounded-3xl bg-gradient-to-b from-[#e0f7fa] to-[#f5f8f8] dark:from-[#15282d] dark:to-[#101f22] pt-8 pb-16 px-4 text-center shadow-inner border border-[#cee4e8] dark:border-gray-800">
+<!-- Speech Bubble -->
+<div class="absolute top-6 right-6 animate-bounce duration-[3000ms]">
+<div class="relative bg-white dark:bg-surface-dark px-4 py-2 rounded-2xl rounded-bl-none shadow-soft text-sm font-bold text-text-main dark:text-white">
+                            Ready to sing? 🎤
+                        </div>
+</div>
+<!-- Mascot Image -->
+<div class="mx-auto aspect-[4/3] w-full max-w-[280px] bg-contain bg-center bg-no-repeat transform hover:scale-105 transition-transform duration-500" data-alt="3D cartoon mascot of a cute green owl wearing headphones and holding a microphone" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD_V7hOHoFXz25nBXjBxsjBjAFeCvE03a6gD1_C54Kxh1BigkVkYrtz3hqqdFl--Wr1VDmjK_-jn1u-9zpSXIW_QIiq4wYOEycNqp3Kla7ymraIu-q28FHdSNFf_1KJiZASFxcHnmbqQWJizZnQpgAL0wiwqL0c7uueJaPVInsJ6o5XFHPKdsGyqsvs8HnhSA2Ly9YC4FWSAwltriYT5NUsUHJbk68GGsTaJAWWNtREI4n_zgMUuS7poMek1bi8GNDbQJsH-lBA9zk"); /* Abstract placeholder for mascot */'>
+</div>
+</div>
+<!-- Primary CTA: Floating over the bottom of the mascot card -->
+<div class="-mt-8 w-full px-2 z-10">
+<button class="group relative flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-16 bg-primary hover:bg-primary-dark transition-all duration-300 shadow-glow active:scale-95">
+<div class="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+<span class="material-symbols-outlined mr-2 text-white text-[28px] animate-pulse">play_circle</span>
+<span class="text-white text-xl font-bold tracking-wide">Choose Song</span>
+</button>
+</div>
+</section>
+<!-- Daily Challenge Card -->
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-lg font-bold text-text-main dark:text-white">Daily Challenge</h3>
+<span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">EXP x2</span>
+</div>
+<div class="relative overflow-hidden rounded-2xl bg-surface-light dark:bg-surface-dark p-4 shadow-soft border border-gray-100 dark:border-gray-800">
+<div class="flex gap-4 items-center">
+<div class="flex-1 flex flex-col gap-1">
+<p class="text-text-sub text-xs font-bold uppercase tracking-wider">Pronunciation</p>
+<p class="text-text-main dark:text-white text-base font-bold leading-tight">Sing 'La Bamba' chorus</p>
+<div class="mt-3">
+<button class="flex items-center gap-1 text-sm font-bold text-primary hover:text-primary-dark transition-colors">
+<span class="material-symbols-outlined text-[20px]">play_arrow</span>
+                                    Start Now
+                                </button>
+</div>
+</div>
+<div class="w-24 h-24 shrink-0 rounded-xl bg-cover bg-center shadow-inner" data-alt="Album art for the song La Bamba featuring a guitar and mexican patterns" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBnhe1VMNCDP3L9Yi-YJOJAtNd8twJtswNAXjzTIKDxtg-dOhU94zuQ1elWrU-nbGUkMbL2fWy6s_xbF9r55HohXAMOr9hHfb7q3kIyTrmRZ0rhwG-uXtAoUIEDavZrq7zsllWqqHf8Z_41kgFXSDC7z84s4avLjW9Ziz6FvQtwOV_vbVRXDzF1qU7CHby0WFasfgvaMTY1pNAQQTAG8iiZYxU_hTv1_cGojW__5j1OerTLNFPbKgh3E2CZlvT7kX3ZJjpoPDTfMA4");'>
+</div>
+</div>
+</div>
+</section>
+<!-- Learning Path / Recent Activity -->
+<section>
+<div class="flex items-center justify-between mb-4 px-1">
+<h3 class="text-lg font-bold text-text-main dark:text-white">Your Path</h3>
+<button class="text-sm font-medium text-text-sub hover:text-primary transition-colors">View Map</button>
+</div>
+<div class="flex flex-col gap-4 relative pl-4">
+<!-- Path Line -->
+<div class="absolute left-[34px] top-6 bottom-6 w-1 bg-[#cee4e8] dark:bg-gray-700 -z-10 rounded-full"></div>
+<!-- Song Node 1 (Active/Completed) -->
+<div class="flex items-center gap-4 group cursor-pointer">
+<div class="relative flex items-center justify-center size-10 rounded-full bg-primary border-4 border-background-light dark:border-background-dark shadow-md z-10 shrink-0">
+<span class="material-symbols-outlined text-white text-[20px]">check</span>
+</div>
+<div class="flex-1 bg-surface-light dark:bg-surface-dark p-3 pr-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between hover:border-primary/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-cover bg-center" data-alt="Album cover for Despacito" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCvcdWAQX352AkKONIaUTlSVwSfIPxKPzCVYD4CrqB6fe78Vv1xr83fLhf7uapt2ft4Q2CZrES_l57apNynzKYvJgxaiFVzWy-0dm8ZiTz-qxEOHy0POgXhZNFurn_zAnmxBO0vQ4hsn1EbAgYnOxcgGFlXxBekSxJ7snEgVVadmY0H0UqXcOzlH8Jgn_HiyrzYvNw5FCA0hnI2fvG-SijS_im9D2yz7VoUVAEhw14h9G_XHXTNzcUczqQUH_md3bTprq662S0L02k");'></div>
+<div>
+<p class="font-bold text-text-main dark:text-white text-sm">Despacito</p>
+<p class="text-xs text-text-sub">Level 1 • 100%</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary">replay</span>
+</div>
+</div>
+<!-- Song Node 2 (Current) -->
+<div class="flex items-center gap-4 group cursor-pointer">
+<div class="relative flex items-center justify-center size-10 rounded-full bg-white dark:bg-surface-dark border-[3px] border-primary shadow-md z-10 shrink-0">
+<span class="material-symbols-outlined text-primary text-[20px]">music_note</span>
+</div>
+<div class="flex-1 bg-surface-light dark:bg-surface-dark p-3 pr-4 rounded-xl border-2 border-primary/20 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-cover bg-center" data-alt="Album cover for Shape of You" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDfSKVy5JkJ8kQ0tNQyva85c_HW7xH8_0w1Cmgx-QVSoauQ5KYFpDM7GRt5pwD_GcPnAKi2Lf-FVL6hRIeOZj1uaoEtqdx4YoG5O5iRdd2hUtJzVooQsKhHs8HQJuKWoGt5gDE3GB-SYPnIg7LPqCYLhvPhkMOROotL_l2Ps9tAJj8plOdD-qTJupv8pXuTgEvwFTih1Dv-IvNS0cXWT3pahmmTurzfi5EtJdbPouT0jy2UiUyZS19MdHoKAaYFnJYsoS7-XWzXcII");'></div>
+<div>
+<p class="font-bold text-text-main dark:text-white text-sm">Shape of You</p>
+<p class="text-xs text-primary font-bold">In Progress</p>
+</div>
+</div>
+<div class="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[18px]">play_arrow</span>
+</div>
+</div>
+</div>
+<!-- Song Node 3 (Locked) -->
+<div class="flex items-center gap-4 opacity-60">
+<div class="relative flex items-center justify-center size-10 rounded-full bg-gray-200 dark:bg-gray-800 border-4 border-background-light dark:border-background-dark z-10 shrink-0">
+<span class="material-symbols-outlined text-gray-400 text-[20px]">lock</span>
+</div>
+<div class="flex-1 bg-transparent p-3 pr-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-gray-400">album</span>
+</div>
+<div>
+<p class="font-bold text-text-main dark:text-white text-sm">Bad Guy</p>
+<p class="text-xs text-text-sub">Level 3 • Locked</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<div class="h-6"></div> <!-- Bottom Spacer -->
+</main>
+<!-- Floating Bottom Navigation -->
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[440px] z-40">
+<div class="flex items-center justify-between bg-surface-light dark:bg-surface-dark rounded-full px-6 py-3 shadow-2xl border border-gray-100 dark:border-gray-800">
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-1.5 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary text-[24px]">home</span>
+</div>
+<span class="text-[10px] font-bold text-primary">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-text-main dark:group-hover:text-white text-[24px]">queue_music</span>
+</div>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-text-main dark:group-hover:text-white">Songs</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-text-main dark:group-hover:text-white text-[24px]">leaderboard</span>
+</div>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-text-main dark:group-hover:text-white">Rank</span>
+</button>
+<button class="flex flex-col items-center gap-1 group">
+<div class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-text-main dark:group-hover:text-white text-[24px]">person</span>
+</div>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-text-main dark:group-hover:text-white">Profile</span>
+</button>
+</div>
+</nav>
+</div>
+</body></html>
