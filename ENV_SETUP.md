@@ -2,6 +2,17 @@
 
 This project uses separate Firebase projects for development/staging and production environments.
 
+## Important: Firebase Web SDK vs Native SDK
+
+This project uses the **Firebase Web SDK** (not the native SDK), which is the standard approach for Expo projects:
+
+- ✅ Uses `.env` files for configuration (this project)
+- ✅ Works with Expo Go and EAS builds
+- ✅ No need for `GoogleService-Info.plist` or `google-services.json`
+- ✅ Simpler setup, no native code required
+
+**Note:** `GoogleService-Info.plist` is only needed if you're using `react-native-firebase` (native SDK), which requires ejecting from Expo. We're using the standard Expo + Firebase Web SDK approach.
+
 ## Overview
 
 - **Development/Staging**: Uses `.env.development` → Firebase staging project
@@ -23,12 +34,22 @@ For each project:
 
 ### 2. Configure Environment Files
 
+#### Getting Firebase Configuration
+
+For each Firebase project, get the Web SDK config (not iOS/Android config):
+
+1. Go to Firebase Console → Your project
+2. Click Settings (gear icon) → Project Settings
+3. Scroll to "Your apps" section
+4. Click "Add app" → Select **Web** (</> icon)
+5. Register your app with a nickname (e.g., "LingoTune Web")
+6. Copy the `firebaseConfig` object values
+
+**Important:** Use the **Web** app configuration, not iOS or Android. The values will look like this in the Firebase Console.
+
 #### Development/Staging (`.env.development`)
 
-1. Go to Firebase Console → Your staging project
-2. Click Settings (gear icon) → Project Settings
-3. Scroll to "Your apps" → Add app or select existing
-4. Copy configuration values to `.env.development`:
+Copy values from your **staging** Firebase Web app to `.env.development`:
 
 ```env
 EXPO_PUBLIC_ENV=development
@@ -196,9 +217,20 @@ Check the console logs to see which project ID is being used. The environment sh
 2. Check that `eas.json` has correct environment variables
 3. Verify your EAS project ID in `app.config.ts`
 
+## Firebase Configuration: What to Use
+
+| What You Need | Where to Find It | File Type |
+|---------------|------------------|-----------|
+| ✅ **Web SDK Config** | Firebase Console → Add Web App (</>) | Values for `.env` files |
+| ❌ GoogleService-Info.plist | Firebase Console → Add iOS App | Not needed for Expo |
+| ❌ google-services.json | Firebase Console → Add Android App | Not needed for Expo |
+
+**For this Expo project:** Only register a **Web app** in Firebase Console and use those values in your `.env` files.
+
 ## Next Steps
 
-1. Fill in your actual Firebase credentials in both `.env` files
-2. Test locally with staging environment
-3. Set up EAS Build for TestFlight/App Store distribution
-4. Configure Firebase Security Rules for both projects
+1. Create **Web apps** in both Firebase projects (staging and production)
+2. Fill in your actual Firebase **Web SDK** credentials in both `.env` files
+3. Test locally with staging environment
+4. Set up EAS Build for TestFlight/App Store distribution
+5. Configure Firebase Security Rules for both projects
