@@ -33,10 +33,10 @@ yarn-error.*
 # local env files
 .env*.local
 .env
-# Keep template files but ignore actual environment configs
+.env.development
+.env.production
+# Keep template file
 !.env.example
-!.env.development
-!.env.production
 
 # Firebase config files (contain credentials)
 GoogleService-Info.plist

@@ -7,7 +7,8 @@ import {
   sendPasswordResetEmail,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -34,7 +35,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    // Create Firebase Auth account
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    try {
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        email: user.email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      // If Firestore write fails, delete the auth account to maintain consistency
+      await user.delete();
+      throw error;
+    }
   };
 
   const signIn = async (email: string, password: string) => {

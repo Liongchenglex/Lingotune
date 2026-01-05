@@ -1,0 +1,78 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isAudio() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+
+    function isValidFileSize(maxSizeMB) {
+      return request.resource.size < maxSizeMB * 1024 * 1024;
+    }
+
+    // Deny all by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // User profile pictures - max 5MB
+    match /users/{userId}/profile/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId)
+                   && isImage()
+                   && isValidFileSize(5);
+    }
+
+    // User audio recordings (pronunciation practice) - max 10MB
+    match /users/{userId}/audio/{fileName} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+                   && isAudio()
+                   && isValidFileSize(10);
+    }
+
+    // User private files - max 20MB
+    match /users/{userId}/files/{fileName} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+                   && isValidFileSize(20);
+    }
+
+    // Public content (lesson images, course materials)
+    // Read-only for authenticated users, write via Admin SDK only
+    match /content/lessons/{lessonId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Use Admin SDK
+    }
+
+    match /content/courses/{courseId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Use Admin SDK
+    }
+
+    match /content/vocabulary/{vocabId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Use Admin SDK
+    }
+
+    // Public images (flags, icons) - read for everyone
+    match /public/{fileName} {
+      allow read: if true;
+      allow write: if false; // Use Admin SDK
+    }
+  }
+}

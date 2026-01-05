@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "lingoleap---staging",
+    "staging": "lingoleap---staging",
+    "production": "lingoleap-56ead"
+  }
+}
