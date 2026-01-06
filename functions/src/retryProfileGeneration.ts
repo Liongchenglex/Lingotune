@@ -49,16 +49,14 @@ interface OnboardingTest {
 
 /**
  * Scheduled function - runs every 5 minutes
- * Cloud Scheduler must be configured separately:
- *   gcloud scheduler jobs create pubsub retry-profile-generation \
- *     --schedule="*/5 * * * *" \
- *     --topic=retry-profile-generation \
- *     --message-body='{"action":"retry"}' \
- *     --project=YOUR_PROJECT_ID
+ *
+ * Note: Firebase Functions v2 schedule syntax is used (.schedule('every 5 minutes'))
+ * This automatically creates the Cloud Scheduler job when deployed.
+ * No manual gcloud command needed.
  */
 export const retryProfileGeneration = functions.pubsub
   .schedule('every 5 minutes')
-  .onRun(async (context) => {
+  .onRun(async (_context) => {
     console.log('Starting retry profile generation job...');
 
     const fiveMinutesAgo = admin.firestore.Timestamp.fromMillis(
