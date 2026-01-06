@@ -1,0 +1,18 @@
+# Compiled JavaScript files
+lib/
+*.js
+*.js.map
+
+# Node modules
+node_modules/
+
+# Environment variables (use Firebase config instead)
+.env
+.env.*
+
+# Firebase cache
+.firebase/
+
+# Runtime data
+*.log
+npm-debug.log*

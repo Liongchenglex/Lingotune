@@ -80,5 +80,32 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if false; // Use Cloud Functions for updates
     }
+
+    // ===== ONBOARDING FEATURE =====
+
+    // Question bank - read-only for authenticated users
+    // Write via Admin SDK only (import script or Firebase Console)
+    match /questionBank/{questionId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Use Admin SDK for writes
+    }
+
+    // Onboarding test results - users can only access their own test results
+    match /onboardingTests/{testId} {
+      // Read: Only the user who created the test
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+
+      // Create: Only if userId matches authenticated user
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.profileStatus == 'pending';
+
+      // Update: Blocked for clients (only Cloud Functions can update)
+      // Cloud Functions run with admin privileges and bypass these rules
+      allow update: if false;
+
+      // Delete: Never allow (tests are immutable records)
+      allow delete: if false;
+    }
   }
 }

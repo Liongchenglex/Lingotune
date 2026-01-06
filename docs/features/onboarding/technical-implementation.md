@@ -309,55 +309,161 @@ interface ProfileSummaryScreenProps {
 
 ---
 
-### Phase 4: Firebase Backend (Future)
+### Phase 4: Firebase Backend
 
-#### ⏳ 11. Firebase Function: generateOnboardingProfile
+#### ✅ 11. Firebase Functions Project Setup
 
-**Planned**:
-- Firestore onCreate trigger for `onboardingTests/{testId}`
-- Call OpenAI GPT API with test data
-- Fallback to Claude if GPT fails
-- Queue retry if both fail
-- Update test document with profile
+**Completed**: 2026-01-06
+
+**What was implemented**:
+- Firebase Functions project structure in `functions/` directory
+- package.json with dependencies (firebase-functions, firebase-admin, openai, @anthropic-ai/sdk)
+- TypeScript configuration (tsconfig.json)
+- Build and deployment scripts
+- firebase.json updated with functions configuration
+- .gitignore for compiled files
+
+**Files created**:
+- `functions/package.json` - Dependencies and scripts
+- `functions/tsconfig.json` - TypeScript compiler configuration
+- `functions/.gitignore` - Ignore compiled JS and node_modules
+- `functions/src/index.ts` - Entry point for all functions
 
 ---
 
-#### ⏳ 12. Firebase Function: retryProfileGeneration
+#### ✅ 12. Firebase Function: generateOnboardingProfile
 
-**Planned**:
-- Pub/Sub scheduled task (every 5 minutes)
-- Query pending profiles
-- Retry AI generation
-- Update status or mark as failed after max attempts
+**Completed**: 2026-01-06
+
+**What was implemented**:
+- Firestore onCreate trigger for `onboardingTests/{testId}` collection
+- OpenAI GPT-4o integration for profile generation
+- Anthropic Claude 3.5 Sonnet fallback if GPT fails
+- Detailed AI prompt with test results, category performance, and question analysis
+- JSON response parsing with profile text and goals array
+- Atomic Firestore updates (test document + user profile)
+- Error handling with retry count tracking
+- Comprehensive logging for debugging
+
+**Security**:
+- API keys stored in Firebase Functions config (not in code)
+- Runs with admin privileges (bypasses security rules)
+- Validates userId before updating user profile
+- Marks tests for retry if both AI services fail
+
+**AI Prompt Strategy**:
+- Includes overall accuracy, foundation question performance, time spent
+- Groups questions by category with performance percentages
+- Provides full question details (text, user answer, correct answer, time)
+- Requests 2-3 paragraph profile + 3-5 specific goals
+- Encourages personalized, motivational tone
+
+**File**: `functions/src/generateOnboardingProfile.ts`
 
 ---
 
-### Phase 5: Security (In Progress)
+#### ✅ 13. Firebase Function: retryProfileGeneration
 
-#### ⏳ 13. Firestore Security Rules
+**Completed**: 2026-01-06
 
-**Planned**:
+**What was implemented**:
+- Pub/Sub scheduled function (runs every 5 minutes)
+- Query for pending tests older than 5 minutes
+- Batch processing (max 10 tests per run to avoid timeout)
+- Retry logic with OpenAI → Claude fallback
+- Max retry limit (5 attempts) before marking as failed
+- Retry count tracking in test documents
+- Summary logging (success, failed, max retries, errors)
+
+**Configuration Required** (deployment):
+```bash
+# Cloud Scheduler must be set up separately or use built-in scheduler
+firebase functions:config:set openai.key="sk-..." --project PROJECT_ID
+firebase functions:config:set anthropic.key="sk-ant-..." --project PROJECT_ID
+```
+
+**Error Handling**:
+- Increments retryCount on each failure
+- Marks as 'failed' after 5 attempts
+- Logs all retry attempts for monitoring
+- Returns summary object for observability
+
+**File**: `functions/src/retryProfileGeneration.ts`
+
+---
+
+### Phase 5: Security & Configuration
+
+#### ✅ 14. Firestore Security Rules
+
+**Completed**: 2026-01-06
+
+**What was implemented**:
+- Security rules for questionBank collection (read-only for authenticated users)
+- Security rules for onboardingTests collection (users can only access their own tests)
+- onCreate validation (userId must match authenticated user, profileStatus must be 'pending')
+- Update blocked for clients (only Cloud Functions can update)
+- Delete blocked (tests are immutable records)
+
+**Rules added to `firestore.rules`**:
 ```javascript
-// onboardingTests collection
-match /onboardingTests/{testId} {
-  allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-  allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-  allow update: if false; // Tests are immutable after creation (except by Functions)
-}
-
-// questionBank collection
+// Question bank - read-only for authenticated users
 match /questionBank/{questionId} {
-  allow read: if request.auth != null; // All authenticated users can read
-  allow write: if false; // Only admin via backend
+  allow read: if isAuthenticated();
+  allow write: if false; // Use Admin SDK for writes
 }
 
-// users collection (extend existing rules)
-match /users/{userId} {
-  allow read: if request.auth != null && request.auth.uid == userId;
-  allow update: if request.auth != null && request.auth.uid == userId;
-  // Validate languages array updates contain valid data
+// Onboarding test results - users can only access their own
+match /onboardingTests/{testId} {
+  allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+  allow create: if isAuthenticated()
+                && request.resource.data.userId == request.auth.uid
+                && request.resource.data.profileStatus == 'pending';
+  allow update: if false; // Only Cloud Functions
+  allow delete: if false; // Immutable records
 }
 ```
+
+**Security Properties**:
+- Fail-closed by default (deny all unless explicitly allowed)
+- userId validation on all operations
+- Cloud Functions bypass rules (admin privileges)
+- No cross-user data access
+- Immutable test records (audit trail)
+
+---
+
+#### ✅ 15. Question Import Script (Admin SDK)
+
+**Completed**: 2026-01-06
+
+**What was implemented**:
+- Admin SDK import script (`scripts/importQuestionsAdmin.ts`)
+- Bypasses security rules using Firebase Admin credentials
+- Loads questions from `questionBank.json`
+- Adds createdAt and updatedAt timestamps
+- Uses questionId as document ID for consistency
+- Error handling with import summary
+
+**Usage**:
+```bash
+# Prerequisites: Authenticate with Google Cloud
+gcloud auth application-default login
+
+# Or set service account credentials
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+
+# Run import
+EXPO_PUBLIC_ENV=development npx tsx scripts/importQuestionsAdmin.ts
+EXPO_PUBLIC_ENV=production npx tsx scripts/importQuestionsAdmin.ts
+```
+
+**Authentication Required**:
+- User must authenticate with `gcloud auth application-default login`
+- Or provide service account JSON via GOOGLE_APPLICATION_CREDENTIALS
+- Import script requires admin privileges to write to Firestore
+
+**File**: `scripts/importQuestionsAdmin.ts`
 
 ---
 
@@ -434,13 +540,17 @@ src/
 
 scripts/
 ├── questionBank.json ✅
-└── importQuestions.ts ✅
+├── importQuestions.ts ✅ (client SDK - deprecated)
+└── importQuestionsAdmin.ts ✅ (Admin SDK - use this)
 
 functions/
 ├── src/
-│   ├── generateOnboardingProfile.ts ⏳
-│   └── retryProfileGeneration.ts ⏳
-└── package.json ⏳
+│   ├── index.ts ✅
+│   ├── generateOnboardingProfile.ts ✅
+│   └── retryProfileGeneration.ts ✅
+├── package.json ✅
+├── tsconfig.json ✅
+└── .gitignore ✅
 
 docs/features/onboarding/
 ├── requirements.md ✅
@@ -554,20 +664,43 @@ Welcome → Language Selection → Test Confirmation → Test → Profile Genera
 
 ## Next Steps
 
-**Phase 4: Backend Implementation**
-1. ⏳ Firebase Function: generateOnboardingProfile (OpenAI GPT + Claude fallback)
-2. ⏳ Firebase Function: retryProfileGeneration (background retry queue)
-3. ⏳ Import questions to Firestore (run importQuestions.ts script)
+**Phase 4: Backend Implementation ✅ COMPLETE**
+1. ✅ Firebase Functions project setup
+2. ✅ Firebase Function: generateOnboardingProfile (OpenAI GPT + Claude fallback)
+3. ✅ Firebase Function: retryProfileGeneration (background retry queue)
+4. ✅ Admin SDK import script created
 
-**Phase 5: Security & Integration**
-4. ⏳ Firestore security rules for onboarding collections
-5. ⏳ Wire screens to App.tsx navigation
-6. ⏳ Test complete onboarding flow end-to-end
+**Phase 5: Deployment & Integration**
+5. ⏳ Deploy Firebase Functions to staging/production
+   - Install functions dependencies: `cd functions && npm install`
+   - Build functions: `npm run build`
+   - Set API keys: `firebase functions:config:set openai.key="sk-..." anthropic.key="sk-ant-..."`
+   - Deploy: `firebase deploy --only functions`
+
+6. ⏳ Import questions to Firestore
+   - Authenticate: `gcloud auth application-default login`
+   - Run import: `EXPO_PUBLIC_ENV=development npx tsx scripts/importQuestionsAdmin.ts`
+
+7. ⏳ Deploy Firestore security rules
+   - Deploy: `firebase deploy --only firestore:rules`
+   - Test rules with emulator: `firebase emulators:start --only firestore`
+
+8. ⏳ Wire screens to App.tsx navigation
+   - Integrate onboarding flow into main app navigation
+   - Add conditional routing (show onboarding if not completed)
+   - Test navigation between all screens
+
+9. ⏳ End-to-end testing
+   - Test complete flow: Sign up → Onboarding → Test → AI generation → Dashboard
+   - Test resume functionality (quit and resume at each step)
+   - Test error scenarios (network failures, AI timeouts)
 
 **Future Enhancements**
-7. ⏳ Implement adaptive logic (foundation failures, variety constraint)
-8. ⏳ Migration script for existing users
-9. ⏳ Analytics integration
-10. ⏳ Error monitoring (Sentry/Crashlytics)
+10. ⏳ Implement adaptive logic (foundation failures, variety constraint)
+11. ⏳ Migration script for existing users
+12. ⏳ Analytics integration (Firebase Analytics events)
+13. ⏳ Error monitoring (Sentry/Crashlytics integration)
+14. ⏳ Performance monitoring for AI generation
+15. ⏳ Admin dashboard for question management
 
-**Current Status**: Phase 3 (Client-Side) complete. Ready for Phase 4 (Backend).
+**Current Status**: Phase 4 (Backend) complete. Ready for deployment and integration testing.
