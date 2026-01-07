@@ -12,7 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import LoadingScreen from '../components/LoadingScreen';
-import DashboardScreen from '../screens/DashboardScreen';
+import { DashboardScreen } from '../screens/DashboardScreen';
 import { WelcomeScreen } from '../screens/onboarding/WelcomeScreen';
 import { LanguageSelectionScreen } from '../screens/onboarding/LanguageSelectionScreen';
 import { TestConfirmationScreen } from '../screens/onboarding/TestConfirmationScreen';
