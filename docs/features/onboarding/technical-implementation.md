@@ -669,38 +669,55 @@ Welcome → Language Selection → Test Confirmation → Test → Profile Genera
 2. ✅ Firebase Function: generateOnboardingProfile (OpenAI GPT + Claude fallback)
 3. ✅ Firebase Function: retryProfileGeneration (background retry queue)
 4. ✅ Admin SDK import script created
+5. ✅ Migrated to .env files for environment variables (modern approach)
+6. ✅ Updated to Node.js 20 runtime
 
-**Phase 5: Deployment & Integration**
-5. ⏳ Deploy Firebase Functions to staging/production
-   - Install functions dependencies: `cd functions && npm install`
-   - Build functions: `npm run build`
-   - Set API keys: `firebase functions:config:set openai.key="sk-..." anthropic.key="sk-ant-..."`
-   - Deploy: `firebase deploy --only functions`
+**Phase 5: Deployment & Integration ✅ COMPLETE**
+7. ✅ Deploy Firestore security rules
+   - Deployed with: `firebase deploy --only firestore:rules`
+   - Rules active for questionBank and onboardingTests collections
 
-6. ⏳ Import questions to Firestore
-   - Authenticate: `gcloud auth application-default login`
-   - Run import: `EXPO_PUBLIC_ENV=development npx tsx scripts/importQuestionsAdmin.ts`
+8. ✅ Import questions to Firestore
+   - Authenticated with: `gcloud auth application-default login`
+   - Imported 20 Korean questions successfully
+   - Questions available at: `/questionBank` collection
 
-7. ⏳ Deploy Firestore security rules
-   - Deploy: `firebase deploy --only firestore:rules`
-   - Test rules with emulator: `firebase emulators:start --only firestore`
+9. ✅ Deploy Firebase Functions to staging
+   - Upgraded project to Blaze (pay-as-you-go) plan
+   - Installed dependencies and set environment variables
+   - Deployed both functions to us-central1:
+     - generateOnboardingProfile (Firestore onCreate trigger)
+     - retryProfileGeneration (scheduled every 5 minutes)
+   - Set up artifact cleanup policy
 
-8. ⏳ Wire screens to App.tsx navigation
-   - Integrate onboarding flow into main app navigation
-   - Add conditional routing (show onboarding if not completed)
-   - Test navigation between all screens
+10. ✅ Wire screens to App.tsx navigation
+    - Created MainNavigator component (`src/navigation/MainNavigator.tsx`)
+    - Added OnboardingProvider to App.tsx
+    - Implemented conditional routing:
+      - New users → Onboarding flow
+      - Completed users → Dashboard
+    - All 6 onboarding screens integrated
 
-9. ⏳ End-to-end testing
-   - Test complete flow: Sign up → Onboarding → Test → AI generation → Dashboard
-   - Test resume functionality (quit and resume at each step)
-   - Test error scenarios (network failures, AI timeouts)
+**Phase 6: Testing**
+11. ⏳ End-to-end testing
+    - Test complete flow: Sign up → Onboarding → Test → AI generation → Dashboard
+    - Test resume functionality (quit and resume at each step)
+    - Test error scenarios (network failures, AI timeouts)
+    - Verify AI profile generation works with both OpenAI and Claude
 
 **Future Enhancements**
-10. ⏳ Implement adaptive logic (foundation failures, variety constraint)
-11. ⏳ Migration script for existing users
-12. ⏳ Analytics integration (Firebase Analytics events)
-13. ⏳ Error monitoring (Sentry/Crashlytics integration)
-14. ⏳ Performance monitoring for AI generation
-15. ⏳ Admin dashboard for question management
+12. ⏳ Implement adaptive logic (foundation failures, variety constraint)
+13. ⏳ Migration script for existing users
+14. ⏳ Analytics integration (Firebase Analytics events)
+15. ⏳ Error monitoring (Sentry/Crashlytics integration)
+16. ⏳ Performance monitoring for AI generation
+17. ⏳ Admin dashboard for question management
 
-**Current Status**: Phase 4 (Backend) complete. Ready for deployment and integration testing.
+**Current Status**: Phase 5 (Deployment & Integration) complete. Ready for end-to-end testing.
+
+**Deployed Components:**
+- ✅ Firebase Functions (us-central1, Node 20)
+- ✅ Firestore Security Rules
+- ✅ Question Bank (20 Korean questions)
+- ✅ Client-side navigation integrated
+- ✅ Environment variables configured (.env files)

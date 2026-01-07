@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
-import HomeScreen from './src/screens/HomeScreen';
+import { OnboardingProvider } from './src/contexts/OnboardingContext';
+import MainNavigator from './src/navigation/MainNavigator';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignUpScreen from './src/screens/auth/SignUpScreen';
 import ForgotPasswordScreen from './src/screens/auth/ForgotPasswordScreen';
@@ -17,13 +18,13 @@ function AppContent() {
     return <LoadingScreen />;
   }
 
-  // If user is authenticated, show Home screen
+  // If user is authenticated, show main app with onboarding flow
   if (user) {
     return (
-      <>
-        <HomeScreen />
+      <OnboardingProvider>
+        <MainNavigator />
         <StatusBar style="auto" />
-      </>
+      </OnboardingProvider>
     );
   }
 
