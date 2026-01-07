@@ -37,9 +37,11 @@ export default function MainNavigator() {
 
   const hasCompletedOnboarding = userProfile?.onboardingCompleted || false;
   const hasInProgressOnboarding = currentLanguage && currentLanguage.onboardingStatus === 'in_progress';
+  const hasNotStartedOnboarding = !userProfile?.languages || userProfile.languages.length === 0;
 
   console.log('MainNavigator - hasCompletedOnboarding:', hasCompletedOnboarding);
   console.log('MainNavigator - hasInProgressOnboarding:', hasInProgressOnboarding);
+  console.log('MainNavigator - hasNotStartedOnboarding:', hasNotStartedOnboarding);
   console.log('MainNavigator - showingOnboarding:', showingOnboarding);
 
   // Handle resuming onboarding from dashboard
@@ -63,7 +65,15 @@ export default function MainNavigator() {
     setShowingOnboarding(true);
   };
 
-  // Show dashboard by default (unless explicitly showing onboarding flow)
+  // NEW USER: If user has never started onboarding, show Welcome Screen
+  if (!showingOnboarding && hasNotStartedOnboarding) {
+    return <WelcomeScreen onContinue={() => {
+      setCurrentScreen('language-selection');
+      setShowingOnboarding(true);
+    }} />;
+  }
+
+  // EXISTING USER: Show dashboard by default (unless explicitly showing onboarding flow)
   if (!showingOnboarding) {
     return (
       <DashboardScreen
