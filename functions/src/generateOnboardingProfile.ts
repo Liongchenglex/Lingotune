@@ -105,7 +105,7 @@ export const generateOnboardingProfile = functions.firestore
  * Generate profile using OpenAI GPT
  */
 async function generateWithOpenAI(testData: OnboardingTest): Promise<{ profile: string; goals: string[] } | null> {
-  const apiKey = functions.config().openai?.key;
+  const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
     console.error('OpenAI API key not configured');
@@ -162,7 +162,7 @@ async function generateWithOpenAI(testData: OnboardingTest): Promise<{ profile: 
  * Generate profile using Claude (fallback)
  */
 async function generateWithClaude(testData: OnboardingTest): Promise<{ profile: string; goals: string[] } | null> {
-  const apiKey = functions.config().anthropic?.key;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
     console.error('Anthropic API key not configured');

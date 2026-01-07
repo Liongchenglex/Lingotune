@@ -6,9 +6,10 @@ lib/
 # Node modules
 node_modules/
 
-# Environment variables (use Firebase config instead)
+# Environment variables
 .env
 .env.*
+!.env.example
 
 # Firebase cache
 .firebase/
