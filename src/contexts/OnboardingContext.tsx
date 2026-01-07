@@ -21,6 +21,7 @@ import {
   Timestamp,
   addDoc,
   collection,
+  deleteField,
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from './AuthContext';
@@ -135,15 +136,16 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       let updatedLanguages: UserLanguage[];
 
       if (existingLanguageIndex >= 0) {
-        // Update existing language entry
+        // Update existing language entry - reset to initial state
+        const existingLang = userProfile.languages[existingLanguageIndex];
         updatedLanguages = [...userProfile.languages];
         updatedLanguages[existingLanguageIndex] = {
-          ...updatedLanguages[existingLanguageIndex],
+          languageCode: existingLang.languageCode,
           onboardingStatus: 'in_progress',
           currentScreen: 'welcome',
-          currentQuestionIndex: undefined,
-          tempAnswers: undefined,
+          testHistory: existingLang.testHistory || [],
           lastUpdated: Timestamp.now(),
+          // Omit currentQuestionIndex and tempAnswers to avoid undefined values
         };
       } else {
         // Add new language entry
@@ -153,6 +155,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           currentScreen: 'welcome',
           testHistory: [],
           lastUpdated: Timestamp.now(),
+          // Omit optional fields to avoid undefined values
         };
         updatedLanguages = [...userProfile.languages, newLanguage];
       }
@@ -300,19 +303,19 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         (lang) => lang.onboardingStatus === 'completed'
       ).length === 0;
 
-      const updatedLanguages = userProfile.languages.map((lang) =>
-        lang.languageCode === currentLanguage.languageCode
-          ? {
-              ...lang,
-              onboardingStatus: 'completed' as const,
-              currentScreen: undefined,
-              currentQuestionIndex: undefined,
-              tempAnswers: undefined,
-              testHistory: [...lang.testHistory, testDocRef.id],
-              lastUpdated: Timestamp.now(),
-            }
-          : lang
-      );
+      const updatedLanguages = userProfile.languages.map((lang) => {
+        if (lang.languageCode === currentLanguage.languageCode) {
+          // Remove optional fields to avoid undefined values
+          const { currentScreen, currentQuestionIndex, tempAnswers, ...rest } = lang;
+          return {
+            ...rest,
+            onboardingStatus: 'completed' as const,
+            testHistory: [...lang.testHistory, testDocRef.id],
+            lastUpdated: Timestamp.now(),
+          };
+        }
+        return lang;
+      });
 
       // Update Firestore
       await updateDoc(doc(db, 'users', user.uid), {
