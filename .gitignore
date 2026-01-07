@@ -41,6 +41,7 @@ yarn-error.*
 # Firebase config files (contain credentials)
 GoogleService-Info.plist
 google-services.json
+service-account-key*.json
 
 # typescript
 *.tsbuildinfo

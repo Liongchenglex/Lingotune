@@ -33,17 +33,34 @@ if (!projectId) {
 console.log(`🔥 Firebase Project: ${projectId}`);
 
 // Initialize Firebase Admin
-// For local development, uses Application Default Credentials or service account
+// Looks for service account key file based on environment
+const serviceAccountPath = env === 'production'
+  ? path.join(__dirname, '..', 'service-account-key-production.json')
+  : path.join(__dirname, '..', 'service-account-key-staging.json');
+
 try {
+  // Check if service account file exists
+  if (!fs.existsSync(serviceAccountPath)) {
+    console.error(`❌ Service account key not found: ${serviceAccountPath}`);
+    console.log('\n💡 To fix this:');
+    console.log('   1. Go to Firebase Console > Project Settings > Service Accounts');
+    console.log('   2. Click "Generate new private key"');
+    console.log(`   3. Save the file as: ${path.basename(serviceAccountPath)}`);
+    console.log('   4. Place it in the project root directory');
+    console.log('\n⚠️  IMPORTANT: Add service-account-key*.json to .gitignore!');
+    process.exit(1);
+  }
+
+  const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+
   admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
     projectId: projectId,
   });
+
+  console.log('✅ Firebase Admin initialized with service account');
 } catch (error) {
   console.error('❌ Failed to initialize Firebase Admin:', error);
-  console.log('\n💡 To fix this, you need to authenticate:');
-  console.log('   1. Install Google Cloud SDK (gcloud)');
-  console.log('   2. Run: gcloud auth application-default login');
-  console.log('   3. Or set GOOGLE_APPLICATION_CREDENTIALS env variable to service account JSON');
   process.exit(1);
 }
 
