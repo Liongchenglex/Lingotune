@@ -244,12 +244,25 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
     try {
       setLoading(true);
 
+      // Debug logging
+      console.log('=== Test Completion Debug ===');
+      console.log('Total questions:', questions.length);
+      console.log('Total answers:', finalAnswers.length);
+      console.log('Answers:', finalAnswers.map((a, i) => ({ index: i, questionId: a?.questionId, hasAnswer: !!a?.answer })));
+
       // Calculate metrics
       const totalTimeElapsed = Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
 
       // Build test questions array with user answers
       const testQuestions = questions.map((q, index) => {
         const userAnswer = finalAnswers[index];
+
+        // Safety check: if userAnswer is undefined, something went wrong
+        if (!userAnswer) {
+          console.error(`Missing answer for question ${index + 1}:`, q.questionId);
+          throw new Error(`Missing answer for question ${index + 1}. Please try again.`);
+        }
+
         const isCorrect = Array.isArray(q.correctAnswer)
           ? JSON.stringify(q.correctAnswer.sort()) === JSON.stringify(Array.isArray(userAnswer.answer) ? userAnswer.answer.sort() : [userAnswer.answer])
           : q.correctAnswer === userAnswer.answer;
