@@ -246,22 +246,49 @@ Write in an encouraging, specific, and actionable tone. Avoid generic statements
 
 ### Dashboard Access Control
 
+**⚠️ IMPLEMENTATION NOTE: This section was revised during implementation. See below for actual implementation.**
+
+**~~Original Design (Not Implemented)~~:**
+- ~~User attempts to access dashboard~~
+- ~~System checks `onboardingCompleted` flag (false)~~
+- ~~App shows modal overlay on dashboard:~~
+  - ~~Darken/blur dashboard content~~
+  - ~~Show message: "Complete your diagnostic test to unlock your learning dashboard"~~
+  - ~~Show "Continue Setup" button~~
+  - ~~No close/dismiss option (blocking)~~
+- ~~On "Continue Setup" tap → Navigate to resume onboarding flow~~
+
+**Actual Implementation (Dashboard-First Approach):**
+
 **Before First Language Onboarding:**
-- User attempts to access dashboard
-- System checks `onboardingCompleted` flag (false)
-- App shows modal overlay on dashboard:
-  - Darken/blur dashboard content
-  - Show message: "Complete your diagnostic test to unlock your learning dashboard"
-  - Show "Continue Setup" button
-  - No close/dismiss option (blocking)
-- On "Continue Setup" tap → Navigate to resume onboarding flow
+- User is authenticated → Dashboard is shown immediately (not blocking overlay)
+- Dashboard displays prominent orange banner at top:
+  - Icon: ⏸️
+  - Title: "Complete Your Onboarding"
+  - Description: "Resume where you left off and unlock all features"
+  - Arrow indicator: →
+- Dashboard content is fully visible (not blurred/darkened)
+- All learning features are disabled:
+  - "Start Learning" buttons show "Complete Onboarding First"
+  - Buttons are grayed out and non-tappable
+- On banner tap → Navigate to resume onboarding flow from saved screen
+- Banner disappears after onboarding completion
 
 **After First Language Onboarding:**
 - Dashboard fully accessible
+- No banner shown
+- "Start Learning" buttons enabled
 - User can view all features
 - If user adds new language:
   - That language's features locked until onboarding completed
   - Other languages remain accessible
+
+**Rationale for Change:**
+- **Better UX**: Users see dashboard value proposition before committing to full onboarding
+- **Reduced Friction**: Non-blocking banner feels less restrictive than modal overlay
+- **Progressive Disclosure**: Users can explore UI while features remain gated
+- **Same Enforcement**: Users still must complete onboarding to use features
+- **Modern Pattern**: Follows contemporary app onboarding patterns (e.g., Duolingo, Notion)
 
 ---
 
@@ -400,9 +427,12 @@ Dashboard → User: Show unlocked dashboard
         ↓
 [App Reopened]
         ↓
-[Dashboard with Overlay]
-  - "Complete your diagnostic test"
-  - "Continue Setup" button
+[Dashboard with Resume Banner]
+  - Orange banner: "⏸️ Complete Your Onboarding"
+  - Dashboard content visible but features disabled
+  - Banner tappable to resume
+        ↓
+[User taps banner]
         ↓
 [Test Screen - Question 5]
   (timer reset, previous answers saved)

@@ -804,3 +804,191 @@ Welcome → Language Selection → Test Confirmation → Test → Profile Genera
 - ✅ Question Bank (20 Korean questions)
 - ✅ Client-side navigation integrated
 - ✅ Environment variables configured (.env files)
+
+---
+
+## Section 18: Dashboard-First Navigation with Resume Banner
+
+**Date**: 2026-01-07
+**Status**: ✅ COMPLETE
+
+### Problem
+Original requirements specified a "blocking overlay" that prevents dashboard access until onboarding is complete. However, this creates a poor UX where users can't see what they're working toward. Users who quit mid-onboarding should land on the dashboard to understand the value proposition, but with clear guidance to complete onboarding.
+
+### Solution
+Implemented "dashboard-first" navigation with prominent resume banner:
+
+**User Flow:**
+1. User starts onboarding, answers questions 1-5
+2. User quits app
+3. User reopens app → **lands on dashboard** (not stuck in onboarding)
+4. Dashboard shows prominent orange banner at top: "⏸️ Complete Your Onboarding - Resume where you left off →"
+5. All learning features are disabled with message "Complete Onboarding First"
+6. User taps banner → resumes from question 5
+
+**Benefits:**
+- Users see dashboard content immediately (value proposition)
+- Clear call-to-action to complete onboarding
+- Non-blocking UX (users can explore, but can't use features)
+- Maintains resume functionality from saved state
+
+### Implementation
+
+**Files Changed:**
+1. `src/navigation/MainNavigator.tsx`
+2. `src/screens/DashboardScreen.tsx`
+
+#### MainNavigator Changes
+
+**Before:**
+```typescript
+// Always checked onboarding status, routed to either dashboard OR onboarding
+if (hasCompletedOnboarding) {
+  return <DashboardScreen />;
+}
+// Show onboarding flow...
+```
+
+**After:**
+```typescript
+// Dashboard is default view, toggle flag to show onboarding
+const [showingOnboarding, setShowingOnboarding] = useState(false);
+
+const handleResumeOnboarding = () => {
+  if (currentLanguage && currentLanguage.currentScreen) {
+    setCurrentScreen(currentLanguage.currentScreen); // Resume from saved screen
+    setSelectedLanguage(currentLanguage.languageCode);
+    setShowingOnboarding(true);
+  }
+};
+
+if (!showingOnboarding) {
+  return (
+    <DashboardScreen
+      onResumeOnboarding={hasInProgressOnboarding ? handleResumeOnboarding : undefined}
+      onAddLanguage={handleStartNewLanguage}
+    />
+  );
+}
+```
+
+**Key Logic:**
+- `showingOnboarding` state flag controls whether to show dashboard or onboarding screens
+- Dashboard is shown by default (unless explicitly in onboarding flow)
+- `handleResumeOnboarding` callback resumes from `currentLanguage.currentScreen`
+- `hasInProgressOnboarding` = `currentLanguage && currentLanguage.onboardingStatus === 'in_progress'`
+
+#### DashboardScreen Changes
+
+**Props Added:**
+```typescript
+interface DashboardScreenProps {
+  onResumeOnboarding?: () => void; // If provided, show resume banner
+  onAddLanguage?: () => void;      // Navigate to language selection
+}
+```
+
+**Resume Banner (shown when `onResumeOnboarding` provided):**
+```tsx
+{hasInProgressOnboarding && (
+  <TouchableOpacity
+    style={styles.resumeBanner}
+    onPress={onResumeOnboarding}
+    activeOpacity={0.8}
+  >
+    <View style={styles.resumeBannerContent}>
+      <Text style={styles.resumeBannerIcon}>⏸️</Text>
+      <View style={styles.resumeBannerText}>
+        <Text style={styles.resumeBannerTitle}>Complete Your Onboarding</Text>
+        <Text style={styles.resumeBannerDescription}>
+          Resume where you left off and unlock all features
+        </Text>
+      </View>
+      <Text style={styles.resumeBannerArrow}>→</Text>
+    </View>
+  </TouchableOpacity>
+)}
+```
+
+**Disabled Features:**
+```tsx
+<TouchableOpacity
+  style={[styles.startButton, hasInProgressOnboarding && styles.startButtonDisabled]}
+  disabled={hasInProgressOnboarding}
+>
+  <Text style={styles.startButtonText}>
+    {hasInProgressOnboarding ? 'Complete Onboarding First' : 'Start Learning'}
+  </Text>
+</TouchableOpacity>
+```
+
+**Styling:**
+- Orange banner (#FEF3C7 background, #F59E0B border)
+- Prominent placement at top of dashboard
+- Shadow effect for visibility
+- Disabled buttons use gray (#D1D5DB)
+
+### Resume Mechanism
+
+**State Persistence:**
+1. `OnboardingContext` saves `currentScreen` to Firestore on screen change
+2. `MainNavigator` checks `currentLanguage.currentScreen` on mount
+3. If present, banner is shown and resume callback is wired up
+
+**Resume Flow:**
+1. User taps banner
+2. `handleResumeOnboarding()` called
+3. Sets `currentScreen` to saved value (e.g., 'test')
+4. Sets `showingOnboarding = true`
+5. MainNavigator switches to onboarding flow
+6. TestScreen loads from saved `currentQuestionIndex` and `tempAnswers`
+
+### Deviation from Original Requirements
+
+**Original Requirement** (requirements.md lines 247-257):
+- Dashboard content blurred/darkened
+- Blocking modal overlay
+- "Continue Setup" button
+- No close/dismiss option
+
+**Implemented Approach**:
+- Dashboard content visible (not blurred)
+- Non-blocking banner (not modal)
+- "Complete Your Onboarding" banner with tap-to-resume
+- Features disabled until completion
+
+**Rationale for Deviation:**
+- Better onboarding experience (see value before committing)
+- Reduces perceived friction
+- Maintains same functionality (users must complete onboarding)
+- More modern UX pattern (progressive disclosure)
+
+**Requirements Update Needed:**
+- Section 2.6 "Dashboard Access Control" should be updated to reflect non-blocking banner approach
+- Edge case diagrams (lines 395-409) should show banner instead of overlay
+
+### Testing
+
+**Test Cases:**
+1. ✅ New user signs up → sees dashboard with resume banner
+2. ✅ User taps banner → navigates to welcome screen
+3. ✅ User starts onboarding, quits at question 5 → reopens → sees dashboard with banner
+4. ✅ User taps banner → resumes from question 5 (not question 1)
+5. ✅ User completes onboarding → dashboard shows no banner, features enabled
+6. ✅ Completed user sees "Start Learning" buttons (not "Complete Onboarding First")
+
+**Console Logging Added:**
+```typescript
+console.log('MainNavigator - hasCompletedOnboarding:', hasCompletedOnboarding);
+console.log('MainNavigator - hasInProgressOnboarding:', hasInProgressOnboarding);
+console.log('MainNavigator - showingOnboarding:', showingOnboarding);
+```
+
+### Future Considerations
+
+1. **Analytics**: Track resume banner tap rate vs drop-off
+2. **A/B Test**: Compare blocking overlay vs banner approach
+3. **Onboarding Progress**: Show progress indicator in banner (e.g., "5/15 questions complete")
+4. **Time Estimate**: Display "~8 minutes remaining" based on average question time
+
+---
