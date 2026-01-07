@@ -70,6 +70,15 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             languages: data.languages ?? [],
           };
 
+          // If fields were missing, update Firestore to persist them
+          if (data.onboardingCompleted === undefined || data.languages === undefined) {
+            await updateDoc(doc(db, 'users', user.uid), {
+              onboardingCompleted: profile.onboardingCompleted,
+              languages: profile.languages,
+              updatedAt: serverTimestamp(),
+            });
+          }
+
           setUserProfile(profile);
 
           // Set current language if there's one in progress
@@ -77,6 +86,19 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             (lang) => lang.onboardingStatus === 'in_progress'
           );
           setCurrentLanguage(inProgressLanguage || null);
+        } else {
+          // User document doesn't exist - create it with onboarding fields
+          const newProfile: UserProfile = {
+            uid: user.uid,
+            email: user.email || '',
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+            onboardingCompleted: false,
+            languages: [],
+          };
+
+          await setDoc(doc(db, 'users', user.uid), newProfile);
+          setUserProfile(newProfile);
         }
       } catch (err: any) {
         console.error('Failed to load user profile:', err);

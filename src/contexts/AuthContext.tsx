@@ -40,12 +40,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const user = userCredential.user;
 
     try {
-      // Create user document in Firestore
+      // Create user document in Firestore with onboarding fields initialized
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        // Initialize onboarding fields for new users
+        onboardingCompleted: false,
+        languages: [],
       });
     } catch (error) {
       // If Firestore write fails, delete the auth account to maintain consistency

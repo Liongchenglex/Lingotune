@@ -467,6 +467,87 @@ EXPO_PUBLIC_ENV=production npx tsx scripts/importQuestionsAdmin.ts
 
 ---
 
+#### ✅ 16. Firebase Auth Persistence Fix
+
+**Completed**: 2026-01-07
+
+**What was implemented**:
+- Updated Firebase Auth initialization to use AsyncStorage persistence
+- Changed from `getAuth()` to `initializeAuth()` with `getReactNativePersistence`
+- Ensures auth state persists between app sessions (users stay logged in)
+
+**Problem**:
+- Firebase Auth was using default memory persistence
+- Users were logged out every time they closed the app
+- Warning message: "Auth state will default to memory persistence"
+
+**Solution**:
+```typescript
+// Before:
+export const auth = getAuth(app);
+
+// After:
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
+```
+
+**Files Modified**:
+- `src/services/firebase.ts` - Updated auth initialization
+- Added import for `initializeAuth`, `getReactNativePersistence`
+- Added import for `AsyncStorage` from `@react-native-async-storage/async-storage`
+
+**Impact**:
+- Users remain logged in across app sessions
+- Better user experience (no need to re-login)
+- Warning message resolved
+
+---
+
+#### ✅ 17. User Profile Initialization Fix
+
+**Completed**: 2026-01-07
+
+**What was implemented**:
+- Initialize `onboardingCompleted` and `languages` fields for new users
+- Auto-migration for existing users missing these fields
+- Create user document if it doesn't exist
+
+**Problem**:
+- New users signing up got error: "User must be authenticated to start onboarding"
+- User documents created without onboarding fields
+- OnboardingContext couldn't find required fields
+
+**Solution**:
+1. **AuthContext** - Initialize fields on signup:
+```typescript
+await setDoc(doc(db, 'users', user.uid), {
+  uid: user.uid,
+  email: user.email,
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+  // Initialize onboarding fields for new users
+  onboardingCompleted: false,
+  languages: [],
+});
+```
+
+2. **OnboardingContext** - Auto-migration and fallback:
+- Check if fields exist, initialize with defaults if missing
+- Update Firestore to persist migrated fields
+- Create user document if completely missing
+
+**Files Modified**:
+- `src/contexts/AuthContext.tsx` - Added onboarding fields to signup
+- `src/contexts/OnboardingContext.tsx` - Added migration logic and document creation
+
+**Impact**:
+- New users can start onboarding immediately after signup
+- Existing users automatically migrated on first load
+- No manual database updates required
+
+---
+
 #### ✅ 9. Question Bank Data (`scripts/questionBank.json`, `scripts/importQuestions.ts`)
 
 **Completed**: 2026-01-06
@@ -535,8 +616,10 @@ src/
 │   └── DashboardScreen.tsx ✅
 ├── hooks/
 │   └── useTestState.ts ✅
+├── navigation/
+│   └── MainNavigator.tsx ✅
 └── services/
-    └── firebase.ts (existing, no changes)
+    └── firebase.ts ✅ (updated for AsyncStorage persistence)
 
 scripts/
 ├── questionBank.json ✅
