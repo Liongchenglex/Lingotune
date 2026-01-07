@@ -8,7 +8,7 @@
  * - Handles navigation between onboarding screens
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import LoadingScreen from '../components/LoadingScreen';
@@ -23,12 +23,24 @@ import type { OnboardingScreen, LanguageCode } from '../types/onboarding';
 
 export default function MainNavigator() {
   const { user } = useAuth();
-  const { userProfile, loading } = useOnboarding();
+  const { userProfile, loading, currentLanguage } = useOnboarding();
   const [currentScreen, setCurrentScreen] = useState<OnboardingScreen>('welcome');
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
   const [aiProfile, setAiProfile] = useState<string | null>(null);
   const [goals, setGoals] = useState<string[]>([]);
+
+  // Initialize screen based on onboarding status (resume functionality)
+  useEffect(() => {
+    if (userProfile && currentLanguage) {
+      // User has a language in progress, resume from saved screen
+      if (currentLanguage.currentScreen) {
+        console.log('Resuming onboarding from:', currentLanguage.currentScreen);
+        setCurrentScreen(currentLanguage.currentScreen);
+        setSelectedLanguage(currentLanguage.languageCode);
+      }
+    }
+  }, [userProfile, currentLanguage]);
 
   if (loading || !user) {
     return <LoadingScreen />;
@@ -36,6 +48,8 @@ export default function MainNavigator() {
 
   // Check if user has completed onboarding for any language
   const hasCompletedOnboarding = userProfile?.onboardingCompleted || false;
+
+  console.log('MainNavigator - hasCompletedOnboarding:', hasCompletedOnboarding);
 
   // If user has completed onboarding, show dashboard
   if (hasCompletedOnboarding) {

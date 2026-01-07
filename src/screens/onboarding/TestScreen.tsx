@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import {
   collection,
@@ -59,6 +60,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
 
   const [loading, setLoading] = useState(true);
   const [selectedAnswer, setSelectedAnswer] = useState<string | string[] | null>(null);
+  const [textAnswer, setTextAnswer] = useState<string>(''); // For text input questions (picture_desc)
   const [error, setError] = useState<string | null>(null);
   const [questionStartTime, setQuestionStartTime] = useState<Date>(new Date());
   const [timer, setTimer] = useState(0);
@@ -184,10 +186,13 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
    * Validates, records answer, moves to next question or completes test
    */
   const handleSubmit = async () => {
+    // Determine which answer to use (text input or MCQ)
+    const answerToSubmit = currentQuestion.questionType === 'picture_desc' ? textAnswer : selectedAnswer;
+
     // Validate answer
-    const validation = validateAnswer(selectedAnswer);
+    const validation = validateAnswer(answerToSubmit);
     if (!validation.isValid) {
-      setError(validation.error || 'Please select an answer');
+      setError(validation.error || (currentQuestion.questionType === 'picture_desc' ? 'Please enter your answer' : 'Please select an answer'));
       return;
     }
 
@@ -199,7 +204,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
       // Create answer record
       const answer: TempAnswer = {
         questionId: currentQuestion.questionId,
-        answer: selectedAnswer!,
+        answer: answerToSubmit!,
         timeElapsed,
       };
 
@@ -221,6 +226,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
         // Move to next question
         setCurrentQuestionIndex(currentQuestionIndex + 1);
         setSelectedAnswer(null);
+        setTextAnswer(''); // Reset text input
         setQuestionStartTime(new Date());
         setTimer(0);
       }
@@ -388,6 +394,31 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
           </View>
         )}
 
+        {/* Text Input (for picture_desc questions) */}
+        {currentQuestion.questionType === 'picture_desc' && (
+          <View style={styles.textInputContainer}>
+            <Text style={styles.textInputLabel}>Your answer:</Text>
+            <TextInput
+              style={styles.textInput}
+              value={textAnswer}
+              onChangeText={(text) => {
+                setTextAnswer(text);
+                setError(null);
+              }}
+              placeholder="Type your answer here..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.textInputHint}>
+              💡 Write a complete sentence describing the scene.
+            </Text>
+          </View>
+        )}
+
         {/* Error Message */}
         {error && (
           <View style={styles.errorBanner}>
@@ -399,9 +430,12 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, !selectedAnswer && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            (currentQuestion.questionType === 'picture_desc' ? !textAnswer.trim() : !selectedAnswer) && styles.submitButtonDisabled
+          ]}
           onPress={handleSubmit}
-          disabled={!selectedAnswer || loading}
+          disabled={(currentQuestion.questionType === 'picture_desc' ? !textAnswer.trim() : !selectedAnswer) || loading}
           activeOpacity={0.8}
         >
           <Text style={styles.submitButtonText}>
@@ -583,5 +617,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  textInputContainer: {
+    marginBottom: 16,
+  },
+  textInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    padding: 16,
+    fontSize: 16,
+    color: '#111827',
+    minHeight: 120,
+  },
+  textInputHint: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });

@@ -116,6 +116,13 @@ async function generateWithOpenAI(testData: OnboardingTest): Promise<{ profile: 
 
   const prompt = buildPrompt(testData);
 
+  // Log the full prompt for debugging
+  console.log('='.repeat(80));
+  console.log('AI PROMPT (OpenAI GPT-4o):');
+  console.log('='.repeat(80));
+  console.log(prompt);
+  console.log('='.repeat(80));
+
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -140,6 +147,13 @@ async function generateWithOpenAI(testData: OnboardingTest): Promise<{ profile: 
       console.error('Empty response from OpenAI');
       return null;
     }
+
+    // Log the AI response for debugging
+    console.log('='.repeat(80));
+    console.log('AI RESPONSE (OpenAI GPT-4o):');
+    console.log('='.repeat(80));
+    console.log(responseText);
+    console.log('='.repeat(80));
 
     const parsed = JSON.parse(responseText);
 
@@ -173,6 +187,13 @@ async function generateWithClaude(testData: OnboardingTest): Promise<{ profile: 
 
   const prompt = buildPrompt(testData);
 
+  // Log the full prompt for debugging
+  console.log('='.repeat(80));
+  console.log('AI PROMPT (Claude 3.5 Sonnet):');
+  console.log('='.repeat(80));
+  console.log(prompt);
+  console.log('='.repeat(80));
+
   try {
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
@@ -199,6 +220,13 @@ Respond with ONLY the JSON object, no other text.`
       console.error('Empty response from Claude');
       return null;
     }
+
+    // Log the AI response for debugging
+    console.log('='.repeat(80));
+    console.log('AI RESPONSE (Claude 3.5 Sonnet):');
+    console.log('='.repeat(80));
+    console.log(responseText);
+    console.log('='.repeat(80));
 
     const parsed = JSON.parse(responseText);
 
