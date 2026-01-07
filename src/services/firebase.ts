@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Firebase configuration loaded from environment variables
 // Environment is determined by EXPO_PUBLIC_ENV (development/production)
@@ -23,8 +24,13 @@ console.log(`📦 Project ID: ${firebaseConfig.projectId}`);
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services
-export const auth = getAuth(app);
+// Initialize Firebase Auth with AsyncStorage persistence
+// This ensures auth state persists between app sessions
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
+
+// Initialize other Firebase services
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
