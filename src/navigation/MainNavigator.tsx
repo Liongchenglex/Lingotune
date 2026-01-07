@@ -24,36 +24,53 @@ import type { OnboardingScreen, LanguageCode } from '../types/onboarding';
 export default function MainNavigator() {
   const { user } = useAuth();
   const { userProfile, loading, currentLanguage } = useOnboarding();
+  const [showingOnboarding, setShowingOnboarding] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<OnboardingScreen>('welcome');
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
   const [aiProfile, setAiProfile] = useState<string | null>(null);
   const [goals, setGoals] = useState<string[]>([]);
 
-  // Initialize screen based on onboarding status (resume functionality)
-  useEffect(() => {
-    if (userProfile && currentLanguage) {
-      // User has a language in progress, resume from saved screen
-      if (currentLanguage.currentScreen) {
-        console.log('Resuming onboarding from:', currentLanguage.currentScreen);
-        setCurrentScreen(currentLanguage.currentScreen);
-        setSelectedLanguage(currentLanguage.languageCode);
-      }
-    }
-  }, [userProfile, currentLanguage]);
-
   if (loading || !user) {
     return <LoadingScreen />;
   }
 
-  // Check if user has completed onboarding for any language
   const hasCompletedOnboarding = userProfile?.onboardingCompleted || false;
+  const hasInProgressOnboarding = currentLanguage && currentLanguage.onboardingStatus === 'in_progress';
 
   console.log('MainNavigator - hasCompletedOnboarding:', hasCompletedOnboarding);
+  console.log('MainNavigator - hasInProgressOnboarding:', hasInProgressOnboarding);
+  console.log('MainNavigator - showingOnboarding:', showingOnboarding);
 
-  // If user has completed onboarding, show dashboard
-  if (hasCompletedOnboarding) {
-    return <DashboardScreen />;
+  // Handle resuming onboarding from dashboard
+  const handleResumeOnboarding = () => {
+    if (currentLanguage && currentLanguage.currentScreen) {
+      console.log('Resuming onboarding from:', currentLanguage.currentScreen);
+      setCurrentScreen(currentLanguage.currentScreen);
+      setSelectedLanguage(currentLanguage.languageCode);
+      setShowingOnboarding(true);
+    } else {
+      // No saved state, start fresh
+      setCurrentScreen('welcome');
+      setShowingOnboarding(true);
+    }
+  };
+
+  // Handle starting onboarding for a new language
+  const handleStartNewLanguage = () => {
+    setCurrentScreen('language-selection');
+    setSelectedLanguage(null);
+    setShowingOnboarding(true);
+  };
+
+  // Show dashboard by default (unless explicitly showing onboarding flow)
+  if (!showingOnboarding) {
+    return (
+      <DashboardScreen
+        onResumeOnboarding={hasInProgressOnboarding ? handleResumeOnboarding : undefined}
+        onAddLanguage={handleStartNewLanguage}
+      />
+    );
   }
 
   // Otherwise, show onboarding flow based on current screen
@@ -125,8 +142,8 @@ export default function MainNavigator() {
           goals={goals}
           languageName={selectedLanguage ? languageMap[selectedLanguage] : 'Korean'}
           onStartLearning={() => {
-            // onStartLearning in ProfileSummaryScreen should mark onboarding complete
-            // Context will update and re-render showing dashboard
+            // Return to dashboard after completing onboarding
+            setShowingOnboarding(false);
             setCurrentScreen('welcome'); // Reset for next time
           }}
         />

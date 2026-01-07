@@ -15,11 +15,17 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../contexts/OnboardingContext';
 
-export const DashboardScreen: React.FC = () => {
+interface DashboardScreenProps {
+  onResumeOnboarding?: () => void; // Callback to resume incomplete onboarding
+  onAddLanguage?: () => void; // Callback to navigate to language selection
+}
+
+export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onResumeOnboarding, onAddLanguage }) => {
   const { user, signOut } = useAuth();
   const { userProfile, checkOnboardingStatus } = useOnboarding();
 
   const isOnboardingComplete = checkOnboardingStatus();
+  const hasInProgressOnboarding = !!onResumeOnboarding; // If callback provided, there's incomplete onboarding
   const activeLanguages = userProfile?.languages.filter(
     (lang) => lang.onboardingStatus === 'completed'
   );
@@ -47,6 +53,26 @@ export const DashboardScreen: React.FC = () => {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Incomplete Onboarding Banner */}
+      {hasInProgressOnboarding && (
+        <TouchableOpacity
+          style={styles.resumeBanner}
+          onPress={onResumeOnboarding}
+          activeOpacity={0.8}
+        >
+          <View style={styles.resumeBannerContent}>
+            <Text style={styles.resumeBannerIcon}>⏸️</Text>
+            <View style={styles.resumeBannerText}>
+              <Text style={styles.resumeBannerTitle}>Complete Your Onboarding</Text>
+              <Text style={styles.resumeBannerDescription}>
+                Resume where you left off and unlock all features
+              </Text>
+            </View>
+            <Text style={styles.resumeBannerArrow}>→</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Onboarding Status Card */}
       {isOnboardingComplete && (
@@ -113,8 +139,14 @@ export const DashboardScreen: React.FC = () => {
               )}
 
               {/* Action Button */}
-              <TouchableOpacity style={styles.startButton} activeOpacity={0.7}>
-                <Text style={styles.startButtonText}>Start Learning</Text>
+              <TouchableOpacity
+                style={[styles.startButton, hasInProgressOnboarding && styles.startButtonDisabled]}
+                activeOpacity={0.7}
+                disabled={hasInProgressOnboarding}
+              >
+                <Text style={styles.startButtonText}>
+                  {hasInProgressOnboarding ? 'Complete Onboarding First' : 'Start Learning'}
+                </Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -157,7 +189,11 @@ export const DashboardScreen: React.FC = () => {
       </View>
 
       {/* Add Another Language */}
-      <TouchableOpacity style={styles.addLanguageButton} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.addLanguageButton}
+        activeOpacity={0.7}
+        onPress={onAddLanguage}
+      >
         <Text style={styles.addLanguageText}>+ Add Another Language</Text>
       </TouchableOpacity>
 
@@ -206,6 +242,47 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontSize: 14,
     fontWeight: '600',
+  },
+  resumeBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  resumeBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resumeBannerIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  resumeBannerText: {
+    flex: 1,
+  },
+  resumeBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 4,
+  },
+  resumeBannerDescription: {
+    fontSize: 14,
+    color: '#B45309',
+    lineHeight: 18,
+  },
+  resumeBannerArrow: {
+    fontSize: 24,
+    color: '#F59E0B',
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
   statusCard: {
     flexDirection: 'row',
@@ -314,6 +391,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  startButtonDisabled: {
+    backgroundColor: '#D1D5DB',
   },
   startButtonText: {
     color: '#FFFFFF',
