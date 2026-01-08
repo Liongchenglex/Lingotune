@@ -47,7 +47,13 @@ export default function MainNavigator() {
 
   // Handle starting/restarting onboarding
   const handleStartOnboarding = () => {
-    setCurrentScreen('welcome');
+    // If user already has a language, skip welcome/language selection and go straight to test
+    if (currentLanguage) {
+      setSelectedLanguage(currentLanguage.languageCode);
+      setCurrentScreen('test');
+    } else {
+      setCurrentScreen('welcome');
+    }
     setShowingOnboarding(true);
   };
 
