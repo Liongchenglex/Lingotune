@@ -106,49 +106,8 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
     try {
       setLoading(true);
 
-      // Try to load saved state first (AsyncStorage backup)
-      const savedState = await loadSavedState();
-      if (savedState && savedState.questions && savedState.questions.length > 0) {
-        console.log('Resuming from saved state (AsyncStorage)');
-        console.log('  Questions:', savedState.questions.length);
-        console.log('  Current index:', savedState.currentQuestionIndex);
-        console.log('  Saved answers:', savedState.answers?.length || 0);
-
-        // Resume from saved state - initializeTest will reset answers, so we restore them after
-        initializeTest(savedState.questions);
-
-        // Restore previous answers (critical for resume functionality)
-        if (savedState.answers && savedState.answers.length > 0) {
-          // Manually restore answers to state (bypass addAnswer to avoid re-saving)
-          savedState.answers.forEach(answer => addAnswer(answer));
-        }
-
-        // Restore question index after answers
-        if (savedState.currentQuestionIndex !== undefined) {
-          setCurrentQuestionIndex(savedState.currentQuestionIndex);
-        }
-
-        setLoading(false);
-        return;
-      }
-
-      // If AsyncStorage is empty, check Firestore for tempAnswers (fallback)
-      // This handles case where user cleared cache but Firestore data persists
-      const firestoreAnswers = getCurrentLanguageData()?.tempAnswers;
-      const firestoreQuestionIndex = getCurrentLanguageData()?.currentQuestionIndex;
-
-      if (firestoreAnswers && firestoreAnswers.length > 0) {
-        console.log('Resuming from Firestore backup (AsyncStorage was cleared)');
-        console.log('  Saved answers:', firestoreAnswers.length);
-        console.log('  Current index:', firestoreQuestionIndex);
-
-        // Load fresh questions (we don't save questions to Firestore, only answers)
-        // User will get a fresh random set, but that's acceptable since cache was cleared
-        // Alternative: Restart from Q1 - uncomment next line to skip resume
-        // console.log('AsyncStorage cleared - restarting from Q1');
-      }
-
-      // No saved state, load fresh questions
+      // MVP: Always load fresh questions (no resume functionality)
+      // If user reloads during test → restart from Q1
       console.log('Loading fresh questions for language:', language);
 
       // Query question bank

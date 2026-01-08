@@ -35,27 +35,20 @@ export default function MainNavigator() {
     return <LoadingScreen />;
   }
 
-  const hasCompletedOnboarding = userProfile?.onboardingCompleted || false;
+  // SIMPLE MVP LOGIC:
+  // - No languages started (length === 0) → Welcome Screen
+  // - Has language(s) (length >= 1) → Dashboard
+  const hasNoLanguages = !userProfile?.languages || userProfile.languages.length === 0;
   const hasInProgressOnboarding = currentLanguage && currentLanguage.onboardingStatus === 'in_progress';
-  const hasNotStartedOnboarding = !userProfile?.languages || userProfile.languages.length === 0;
 
-  console.log('MainNavigator - hasCompletedOnboarding:', hasCompletedOnboarding);
-  console.log('MainNavigator - hasInProgressOnboarding:', hasInProgressOnboarding);
-  console.log('MainNavigator - hasNotStartedOnboarding:', hasNotStartedOnboarding);
+  console.log('MainNavigator - languages count:', userProfile?.languages?.length || 0);
+  console.log('MainNavigator - hasNoLanguages:', hasNoLanguages);
   console.log('MainNavigator - showingOnboarding:', showingOnboarding);
 
-  // Handle resuming onboarding from dashboard
-  const handleResumeOnboarding = () => {
-    if (currentLanguage && currentLanguage.currentScreen) {
-      console.log('Resuming onboarding from:', currentLanguage.currentScreen);
-      setCurrentScreen(currentLanguage.currentScreen);
-      setSelectedLanguage(currentLanguage.languageCode);
-      setShowingOnboarding(true);
-    } else {
-      // No saved state, start fresh
-      setCurrentScreen('welcome');
-      setShowingOnboarding(true);
-    }
+  // Handle starting/restarting onboarding
+  const handleStartOnboarding = () => {
+    setCurrentScreen('welcome');
+    setShowingOnboarding(true);
   };
 
   // Handle starting onboarding for a new language
@@ -65,19 +58,19 @@ export default function MainNavigator() {
     setShowingOnboarding(true);
   };
 
-  // NEW USER: If user has never started onboarding, show Welcome Screen
-  if (!showingOnboarding && hasNotStartedOnboarding) {
+  // NEW USER: No languages started → Show Welcome Screen
+  if (!showingOnboarding && hasNoLanguages) {
     return <WelcomeScreen onContinue={() => {
       setCurrentScreen('language-selection');
       setShowingOnboarding(true);
     }} />;
   }
 
-  // EXISTING USER: Show dashboard by default (unless explicitly showing onboarding flow)
+  // EXISTING USER: Has languages → Show Dashboard
   if (!showingOnboarding) {
     return (
       <DashboardScreen
-        onResumeOnboarding={hasInProgressOnboarding ? handleResumeOnboarding : undefined}
+        onResumeOnboarding={hasInProgressOnboarding ? handleStartOnboarding : undefined}
         onAddLanguage={handleStartNewLanguage}
       />
     );
