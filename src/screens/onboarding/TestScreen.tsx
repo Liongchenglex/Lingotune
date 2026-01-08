@@ -178,6 +178,14 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
       const shuffled = shuffleArray(loadedQuestions);
       const selected = shuffled.slice(0, Math.min(15, shuffled.length));
 
+      // Check for duplicates (debugging)
+      const questionIds = selected.map(q => q.questionId);
+      const uniqueIds = new Set(questionIds);
+      if (questionIds.length !== uniqueIds.size) {
+        console.warn('WARNING: Duplicate questions detected!', questionIds);
+      }
+      console.log('Loaded questions:', questionIds);
+
       // Initialize test state
       initializeTest(selected);
       setQuestionStartTime(new Date());
@@ -249,9 +257,18 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
       // Check if test should end
       // TODO: Implement early termination logic (3 special questions wrong in a row)
       // For now: just check if last question
+      console.log('Submit Debug:', {
+        currentIndex: currentQuestionIndex,
+        totalQuestions,
+        isLastQuestion,
+        answersCount: answers.length + 1, // +1 for current answer
+      });
+
       if (isLastQuestion) {
+        console.log('Last question reached - completing test');
         await handleTestComplete([...answers, answer]);
       } else {
+        console.log('Moving to next question:', currentQuestionIndex + 1);
         // Move to next question
         setCurrentQuestionIndex(currentQuestionIndex + 1);
         setSelectedAnswer(null);
