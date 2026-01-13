@@ -38,7 +38,7 @@ This replaces:
 
 ## 2. Feature Breakdown
 
-This feature covers **3 primary flows** (Features 1-2 implemented, Features 3-5 planned):
+This feature covers **5 primary flows** (Features 1-2, 5 implemented, Features 3-4 planned):
 
 ### 2.1 Onboarding Status Display (IMPLEMENTED)
 Dashboard shows visual indicators for completed vs in-progress onboarding, with resume functionality.
@@ -46,14 +46,14 @@ Dashboard shows visual indicators for completed vs in-progress onboarding, with 
 ### 2.2 AI Profile Viewing & Regeneration (IMPLEMENTED)
 Users can view their AI-generated profile and manually regenerate it if generation fails or times out.
 
-### 2.3 Music Selection (PLANNED - See Brain Dump)
-Users select songs in their target language for vocabulary learning.
+### 2.3 Music Selection (PARTIAL - UI Foundation)
+Dashboard section for music-based learning. Shows empty state ("Choose Song") or active song with option to change. Only visible when user has completed profile generation.
 
 ### 2.4 Vocabulary Tracking (PLANNED - See Brain Dump)
 Users track learned vocabulary from songs and other sources.
 
-### 2.5 Add Another Language (PLANNED - See Brain Dump)
-Users can add additional languages with proper navigation back to dashboard.
+### 2.5 Add Another Language (IMPLEMENTED)
+Users can add additional languages with context-aware back button navigation (returns to dashboard when accessed from dashboard, no back button for new users).
 
 ---
 
@@ -1190,30 +1190,165 @@ if (!language.testHistory || language.testHistory.length === 0) {
 
 # BRAIN DUMP SECTION (PLANNED FEATURES - NOT YET FORMALIZED)
 
-## Feature 3: Music Selection
+## Feature 3: Music Selection (IMPLEMENTED - UI Foundation)
 
-**Raw Requirement**:
-> Music selection section. Should only be available once user.languages.currentprofile is present. tapping on this button allows the user to select a song (maybe using spotify api? what do you suggest? do have basic validation to check if the song is in the language the user selected). I imagine the UI to show active song being learned and another choose song button. If empty state, only have choose song button.
+**Status**: ⚙️ **PARTIAL** - UI foundation implemented, full song selection to be completed (2026-01-13)
 
-**Status**: 🚧 **Requires Requirement Refinement**
+**Purpose**: Allow users to select songs in their target language for vocabulary-based learning, providing an engaging and contextual learning experience.
+
+**Dashboard Requirements**:
+
+### Visibility Condition
+- **Only shown when**: `user.languages[currentLanguage].currentProfile` is present
+- **Rationale**: Music-based learning requires proficiency assessment to recommend appropriate content
+
+### UI States
+
+**Empty State** (No song selected):
+```
+┌─────────────────────────────────┐
+│  🎵 Learn with Music            │
+│                                 │
+│  Choose a song in [Language]   │
+│  to start learning vocabulary  │
+│                                 │
+│  [+ Choose Song]                │
+└─────────────────────────────────┘
+```
+
+**Active State** (Song selected):
+```
+┌─────────────────────────────────┐
+│  🎵 Currently Learning          │
+│                                 │
+│  🎵 Song Title                  │
+│     Artist Name                 │
+│                                 │
+│  [+ Choose Another Song]        │
+└─────────────────────────────────┘
+```
+
+### Implementation Scope (Dashboard)
+- Section visibility controlled by `currentProfile` presence
+- Empty state UI with "Choose Song" button
+- Active state UI showing current song + "Choose Another Song" button
+- Button press navigates to song selection flow (to be implemented)
+
+### Out of Scope (Dashboard)
+- Song selection logic (Spotify API integration)
+- Language validation for selected songs
+- Vocabulary extraction from lyrics
+- Progress tracking for song-based learning
+
+**Cross-Reference**: Full requirements including Spotify API integration, language validation, and vocabulary extraction will be documented in `/docs/features/learnmusic/requirements.md` (to be created)
+
+**Dependencies**:
+- Feature 2 (AI Profile) must be completed (user must have `currentProfile`)
+- Requires data model for storing selected songs in Firestore
+- Future: Integration with Feature 4 (Vocabulary Tracking)
+
+**Data Model (Minimal - Dashboard Display Only)**:
+```typescript
+interface UserLanguage {
+  // ... existing fields
+  currentSong?: {
+    id: string;          // Song identifier (e.g., Spotify track ID)
+    title: string;       // Song title
+    artist: string;      // Artist name
+    addedAt: Timestamp;  // When song was added
+  };
+}
+```
+
+**Initial Questions to Address in Full Requirements** (`/docs/features/learnmusic/requirements.md`):
+- Which music API to use? (Spotify, Apple Music, YouTube Music)
+- How to validate song language matches user's selected language?
+- How to extract/display lyrics for vocabulary learning?
+- Should users be able to have multiple songs per language (playlist)?
+- How to track learning progress per song?
 
 ---
 
-## Feature 4: Vocabularies Tracking
+## Feature 4: Vocabulary Tracking
 
-**Raw Requirement**:
-> Vocabularies tracking section (feature to be fleshed out)
+**Purpose**: Aggregate and display all vocabulary learned across all songs for each language, providing users with a centralized view of their vocabulary progress.
 
-**Status**: 🚧 **Requires Requirement Refinement**
+**Scope**:
+- Dashboard section showing vocabulary statistics (total words learned, recent additions)
+- Per-language vocabulary aggregation from all song-based learning activities
+- Integration with music selection feature (Feature 3)
+- Vocabulary persistence and progress tracking
+
+**Status**: 🚧 **Planned - Requirements to be formalized**
+
+**Cross-Reference**: Full requirements will be documented in `/docs/features/vocabulary/requirements.md` (to be created)
+
+**Dependencies**:
+- Feature 3 (Music Selection) must be implemented first
+- Requires vocabulary extraction from song lyrics
+- Requires data model for vocabulary storage in Firestore
+
+**Initial Questions to Address in Full Requirements**:
+- How are vocabularies extracted from songs? (Manual selection, auto-extraction, AI-based)
+- What vocabulary metadata is tracked? (word, translation, example sentence, mastery level)
+- How is vocabulary progress measured? (review frequency, quiz scores, spaced repetition)
+- Should vocabulary be shareable across languages for cognates?
+- Integration with existing user profile data model?
 
 ---
 
-## Feature 5: Add Another Language
+## Feature 5: Add Another Language (IMPLEMENTED)
 
-**Raw Requirement**:
-> Add another language. But make sure there is a back button. I believe currently, i am using the select language page that is shared with welcome page. Can we make sure there is a back button such that when accessed through welcome page, it goes back to welcome page and if accessed through dashboard, goes back to dashboard.
+**Status**: ✅ **COMPLETE** (2026-01-13)
 
-**Status**: 🚧 **Requires Requirement Refinement**
+**Purpose**: Allow users to add additional languages to their learning profile with context-aware navigation that returns to the appropriate screen based on entry point.
+
+**Implementation Summary**:
+- **Language Selection Screen** now supports optional back button
+- **Context-aware navigation**: Back button appears only when accessed from Dashboard (users with existing languages)
+- **New user flow unchanged**: First-time users see no back button (prevents confusion during initial onboarding)
+
+**User Flows**:
+
+### Flow 1: New User (No Back Button)
+```
+WelcomeScreen → LanguageSelectionScreen (no back button) → TestConfirmationScreen → Test
+```
+
+### Flow 2: Add Language from Dashboard (With Back Button)
+```
+DashboardScreen → [Add Language] → LanguageSelectionScreen (← Back button) → Dashboard
+                                                          ↓ [Continue]
+                                                   TestConfirmationScreen → Test
+```
+
+**Implementation Details**:
+
+**Files Modified**:
+1. `src/screens/onboarding/LanguageSelectionScreen.tsx`
+   - Added optional `onBack?: () => void` prop
+   - Conditional back button rendered only when `onBack` is provided
+   - Back button styled consistently with app theme (#6366F1)
+
+2. `src/navigation/MainNavigator.tsx`
+   - Added context detection: `isFromDashboard = userProfile?.languages.length > 0`
+   - Passes `onBack` callback only when `isFromDashboard === true`
+   - Back callback returns user to dashboard and resets onboarding state
+
+**Edge Cases Handled**:
+- ✅ New user (no languages) → No back button shown
+- ✅ Existing user adds language → Back button returns to dashboard
+- ✅ User taps back → Onboarding state reset, ready for next attempt
+- ✅ User completes language addition → Normal flow continues
+
+**Testing Checklist**:
+- [x] New user signup → No back button on LanguageSelectionScreen
+- [x] Existing user taps "Add Language" → Back button appears
+- [x] User taps back button → Returns to dashboard
+- [x] User selects language and continues → Proceeds to TestConfirmationScreen
+- [x] Back button styling matches app theme
+
+**Cross-Reference**: See `/docs/features/onboarding/requirements.md` for shared LanguageSelectionScreen component documentation
 
 ---
 
@@ -1335,7 +1470,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 2. **View Profile**:
    - Tap "View Profile" button → Navigate to `ProfileViewScreen` (pass `language` object via route params)
 
-3. **Add Another Language** (planned):
+3. **Add Another Language** (implemented):
    - Tap "Add Language" button → Navigate to `LanguageSelectionScreen` (with back button to Dashboard)
 
 ---
@@ -1400,9 +1535,9 @@ const PROFILE_STATUS_CHECK_ON_MOUNT = true; // Enable/disable automatic status c
 ### Implementation Status
 - [x] Feature 1: Onboarding Status Display - **IMPLEMENTED**
 - [x] Feature 2: AI Profile Viewing & Regeneration - **IMPLEMENTED**
-- [ ] Feature 3: Music Selection - **PLANNED**
+- [x] Feature 3: Music Selection - **PARTIAL** (UI foundation 2026-01-13, full implementation pending)
 - [ ] Feature 4: Vocabulary Tracking - **PLANNED**
-- [ ] Feature 5: Add Another Language - **PLANNED**
+- [x] Feature 5: Add Another Language - **IMPLEMENTED** (2026-01-13)
 
 ---
 

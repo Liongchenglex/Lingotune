@@ -18,6 +18,7 @@ import type { LanguageCode } from '../../types/onboarding';
 
 interface LanguageSelectionScreenProps {
   onContinue: () => void;
+  onBack?: () => void; // Optional - only shown if provided (e.g., when accessed from Dashboard)
 }
 
 interface Language {
@@ -35,7 +36,7 @@ const LANGUAGES: Language[] = [
   { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', available: false },
 ];
 
-export const LanguageSelectionScreen: React.FC<LanguageSelectionScreenProps> = ({ onContinue }) => {
+export const LanguageSelectionScreen: React.FC<LanguageSelectionScreenProps> = ({ onContinue, onBack }) => {
   const { updateCurrentScreen, startOnboarding } = useOnboarding();
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +95,17 @@ export const LanguageSelectionScreen: React.FC<LanguageSelectionScreenProps> = (
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      {/* Back Button (conditional - only shown when accessed from Dashboard) */}
+      {onBack && (
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Choose Your Language</Text>
@@ -192,8 +204,20 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 40,
   },
+  backButton: {
+    marginTop: 8,
+    marginBottom: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#6366F1',
+    fontWeight: '600',
+  },
   header: {
-    marginTop: 20,
+    marginTop: 12,
     marginBottom: 32,
   },
   title: {

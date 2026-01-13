@@ -116,6 +116,7 @@ This document tracks the implementation progress of the onboarding feature. Upda
 #### ✅ 5. LanguageSelectionScreen (`src/screens/onboarding/LanguageSelectionScreen.tsx`)
 
 **Completed**: 2026-01-06
+**Updated**: 2026-01-13 (Added context-aware back button)
 
 **What was implemented**:
 - Language cards with flags (Korean, Chinese, Japanese, Spanish)
@@ -125,6 +126,11 @@ This document tracks the implementation progress of the onboarding feature. Upda
 - Validation before proceeding
 - Calls `startOnboarding(languageCode)` on continue
 - Error handling with user-friendly messages
+- **Context-aware back button** (2026-01-13):
+  - Optional `onBack` prop controls back button visibility
+  - Back button shown only when accessed from Dashboard (existing users)
+  - New users see no back button (prevents confusion during first onboarding)
+  - Styled consistently with app theme (#6366F1)
 
 **Security**:
 - Validates language selection before Firestore write
@@ -136,6 +142,11 @@ This document tracks the implementation progress of the onboarding feature. Upda
 - Checkmark indicator on selected language
 - Disabled state for unavailable languages
 - Loading state during API call
+- **Conditional back button for better navigation UX**
+
+**Shared Component**:
+- Used in both onboarding flow (new users) and dashboard flow (add language)
+- See `/docs/features/dashboard/requirements.md` Feature 5 for dashboard-specific usage
 
 ---
 
@@ -838,6 +849,12 @@ Welcome → Language Selection → Test Confirmation → Test → Profile Genera
 
 ## Section 18: Regenerate Profile Functionality
 
+**⚠️ NOTE: This section has been moved to `/docs/features/dashboard/technical-implementation.md` (Section 2: Profile Regeneration Functionality).**
+
+**For historical reference and context, the original implementation notes are preserved below. For the current canonical documentation, please refer to the dashboard technical documentation.**
+
+---
+
 **Date**: 2026-01-12
 **Status**: ✅ COMPLETE
 
@@ -1008,6 +1025,12 @@ console.log('handleRegenerateProfile - result:', result);
 ---
 
 ## Section 19: Dashboard-First Navigation with Resume Banner
+
+**⚠️ NOTE: This section has been moved to `/docs/features/dashboard/technical-implementation.md` (Section 1: Dashboard-First Navigation with Resume Banner).**
+
+**For historical reference and context, the original implementation notes are preserved below. For the current canonical documentation, please refer to the dashboard technical documentation.**
+
+---
 
 **Date**: 2026-01-07
 **Status**: ✅ COMPLETE

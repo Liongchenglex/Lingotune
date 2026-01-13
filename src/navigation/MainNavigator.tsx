@@ -123,7 +123,19 @@ export default function MainNavigator() {
       return <WelcomeScreen onContinue={() => setCurrentScreen('language-selection')} />;
 
     case 'language-selection':
-      return <LanguageSelectionScreen onContinue={() => setCurrentScreen('test-confirmation')} />;
+      // Detect if user came from Dashboard (has existing languages) vs Welcome Screen (new user)
+      const isFromDashboard = userProfile?.languages && userProfile.languages.length > 0;
+
+      return (
+        <LanguageSelectionScreen
+          onContinue={() => setCurrentScreen('test-confirmation')}
+          onBack={isFromDashboard ? () => {
+            // Return to dashboard if user came from "Add Language" button
+            setShowingOnboarding(false);
+            setCurrentScreen('welcome'); // Reset for next time
+          } : undefined}
+        />
+      );
 
     case 'test-confirmation':
       return <TestConfirmationScreen onStartTest={() => setCurrentScreen('test')} />;

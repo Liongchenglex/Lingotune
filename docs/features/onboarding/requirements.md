@@ -461,6 +461,7 @@ const handleRegenerateProfile = async (languageCode: string, testId: string) => 
 [Language Selection Screen]
   - Language cards (Korean, etc.)
   - "Continue" button
+  - Back button (conditional - only for existing users, see Dashboard Feature 5)
         ↓
 [Test Confirmation Screen]
   - Diagnostic test explanation
@@ -556,6 +557,11 @@ const handleRegenerateProfile = async (languageCode: string, testId: string) => 
 #### Language Selection Screen
 - **Input**: Selected language (string: 'ko', 'zh', 'ja', 'es', etc.)
 - **Validation**: Must select one language before continuing
+- **Navigation Context** (2026-01-13):
+  - Shared component used in both onboarding and dashboard flows
+  - Back button shown conditionally based on context (see `/docs/features/dashboard/requirements.md` Feature 5)
+  - New users (no existing languages): No back button
+  - Existing users adding language from dashboard: Back button returns to dashboard
 
 #### Test Screen (Per Question)
 - **Input**: User answer (type depends on question type)

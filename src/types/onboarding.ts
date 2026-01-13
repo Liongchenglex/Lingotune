@@ -57,6 +57,16 @@ export interface TempAnswer {
 }
 
 /**
+ * Song data for music-based learning
+ */
+export interface CurrentSong {
+  id: string;          // Song identifier (e.g., Spotify track ID)
+  title: string;       // Song title
+  artist: string;      // Artist name
+  addedAt: Timestamp;  // When song was added
+}
+
+/**
  * Language-specific onboarding data within user profile
  * Part of user.languages[] array
  */
@@ -74,6 +84,10 @@ export interface UserLanguage {
   testHistory: string[]; // Array of onboardingTest document IDs
   currentProfile?: string; // Latest AI diagnosis (markdown)
   goals?: string[]; // Extracted from AI profile
+
+  // Music-based learning (Feature 3 - Dashboard)
+  currentSong?: CurrentSong; // Currently selected song for this language
+
   lastUpdated: Timestamp;
 }
 

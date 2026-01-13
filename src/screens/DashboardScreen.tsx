@@ -312,6 +312,62 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </View>
               )}
 
+              {/* Music Selection Section (only shown when profile exists) */}
+              {language.currentProfile && (
+                <View style={styles.musicSection}>
+                  <Text style={styles.musicSectionTitle}>🎵 Learn with Music</Text>
+
+                  {/* Empty State - No song selected */}
+                  {!language.currentSong && (
+                    <View style={styles.musicEmptyState}>
+                      <Text style={styles.musicEmptyText}>
+                        Choose a song in {language.languageCode === 'ko' && 'Korean'}
+                        {language.languageCode === 'zh' && 'Chinese'}
+                        {language.languageCode === 'ja' && 'Japanese'}
+                        {language.languageCode === 'es' && 'Spanish'} to start learning vocabulary
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.chooseSongButton}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          Alert.alert(
+                            'Coming Soon',
+                            'Song selection feature will be available soon!'
+                          );
+                        }}
+                      >
+                        <Text style={styles.chooseSongButtonText}>+ Choose Song</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Active State - Song selected */}
+                  {language.currentSong && (
+                    <View style={styles.musicActiveState}>
+                      <View style={styles.currentSongInfo}>
+                        <Text style={styles.currentSongIcon}>🎵</Text>
+                        <View style={styles.currentSongText}>
+                          <Text style={styles.currentSongTitle}>{language.currentSong.title}</Text>
+                          <Text style={styles.currentSongArtist}>{language.currentSong.artist}</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.chooseSongButton}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          Alert.alert(
+                            'Coming Soon',
+                            'Song selection feature will be available soon!'
+                          );
+                        }}
+                      >
+                        <Text style={styles.chooseSongButtonText}>+ Choose Another Song</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
+
               {/* Action Button */}
               <TouchableOpacity
                 style={[
@@ -661,6 +717,72 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 20,
+  },
+  // Music Selection Section Styles
+  musicSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  musicSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  musicEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  musicEmptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  musicActiveState: {
+    paddingVertical: 8,
+  },
+  currentSongInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  currentSongIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  currentSongText: {
+    flex: 1,
+  },
+  currentSongTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  currentSongArtist: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  chooseSongButton: {
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#6366F1',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  chooseSongButtonText: {
+    color: '#6366F1',
+    fontSize: 14,
+    fontWeight: '600',
   },
   addLanguageButton: {
     backgroundColor: '#FFFFFF',
