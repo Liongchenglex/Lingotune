@@ -86,7 +86,8 @@ export const generateProfile = functions.https.onCall(async (data, context) => {
       return {
         success: true,
         profile: testData.aiProfile,
-        goals: testData.goals || []
+        goals: testData.goals || [],
+        proficiencyLevel: testData.proficiencyLevel || 'Beginner'
       };
     }
 
@@ -119,7 +120,7 @@ export const generateProfile = functions.https.onCall(async (data, context) => {
     }
 
     // Update test document with generated profile
-    await updateProfileSuccess(testId, userId, testData.language, result.profile, result.goals);
+    await updateProfileSuccess(testId, userId, testData.language, result.profile, result.goals, result.proficiencyLevel);
 
     console.log('generateProfile - SUCCESS');
     console.log('='.repeat(80));
@@ -127,7 +128,8 @@ export const generateProfile = functions.https.onCall(async (data, context) => {
     return {
       success: true,
       profile: result.profile,
-      goals: result.goals
+      goals: result.goals,
+      proficiencyLevel: result.proficiencyLevel
     };
 
   } catch (error: any) {
@@ -159,7 +161,7 @@ export const generateProfile = functions.https.onCall(async (data, context) => {
 /**
  * Generate profile using OpenAI GPT-4o
  */
-async function generateWithOpenAI(testData: any): Promise<{ profile: string; goals: string[] } | null> {
+async function generateWithOpenAI(testData: any): Promise<{ profile: string; goals: string[]; proficiencyLevel: string } | null> {
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -182,7 +184,7 @@ async function generateWithOpenAI(testData: any): Promise<{ profile: string; goa
       messages: [
         {
           role: 'system',
-          content: 'You are a language learning expert. Analyze the user\'s test results and create a personalized learning profile. Respond in JSON format with two fields: "profile" (a 2-3 paragraph analysis) and "goals" (array of 3-5 specific learning focus areas).'
+          content: 'You are a language learning expert. Analyze the user\'s test results and create a personalized learning profile. Respond in JSON format with three fields: "profile" (a 2-3 paragraph analysis), "goals" (array of 3-5 specific learning focus areas), and "proficiencyLevel" (one of: "Beginner", "Elementary", "Intermediate", "Advanced").'
         },
         {
           role: 'user',
@@ -208,14 +210,15 @@ async function generateWithOpenAI(testData: any): Promise<{ profile: string; goa
 
     const parsed = JSON.parse(responseText);
 
-    if (!parsed.profile || !parsed.goals) {
+    if (!parsed.profile || !parsed.goals || !parsed.proficiencyLevel) {
       console.error('Invalid response format from OpenAI:', parsed);
       return null;
     }
 
     return {
       profile: parsed.profile,
-      goals: Array.isArray(parsed.goals) ? parsed.goals : []
+      goals: Array.isArray(parsed.goals) ? parsed.goals : [],
+      proficiencyLevel: parsed.proficiencyLevel
     };
   } catch (error) {
     console.error('OpenAI generation error:', error);
@@ -226,7 +229,7 @@ async function generateWithOpenAI(testData: any): Promise<{ profile: string; goa
 /**
  * Generate profile using Claude 3.5 Sonnet (fallback)
  */
-async function generateWithClaude(testData: any): Promise<{ profile: string; goals: string[] } | null> {
+async function generateWithClaude(testData: any): Promise<{ profile: string; goals: string[]; proficiencyLevel: string } | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
@@ -254,9 +257,10 @@ async function generateWithClaude(testData: any): Promise<{ profile: string; goa
 
 ${prompt}
 
-Respond in JSON format with two fields:
+Respond in JSON format with three fields:
 - "profile": A 2-3 paragraph analysis of their current level and learning needs
 - "goals": An array of 3-5 specific learning focus areas
+- "proficiencyLevel": One of: "Beginner", "Elementary", "Intermediate", "Advanced"
 
 Respond with ONLY the JSON object, no other text.`
         }
@@ -277,14 +281,15 @@ Respond with ONLY the JSON object, no other text.`
 
     const parsed = JSON.parse(responseText);
 
-    if (!parsed.profile || !parsed.goals) {
+    if (!parsed.profile || !parsed.goals || !parsed.proficiencyLevel) {
       console.error('Invalid response format from Claude:', parsed);
       return null;
     }
 
     return {
       profile: parsed.profile,
-      goals: Array.isArray(parsed.goals) ? parsed.goals : []
+      goals: Array.isArray(parsed.goals) ? parsed.goals : [],
+      proficiencyLevel: parsed.proficiencyLevel
     };
   } catch (error) {
     console.error('Claude generation error:', error);
@@ -339,26 +344,29 @@ The profile should be 2-3 paragraphs, written in second person (you/your), and f
 
 /**
  * Update test document and user profile with generated profile
+ *
+ * Note: Profile is stored ONLY in user.languages.currentProfile (not in test document)
+ * This ensures DRY principle and single source of truth
  */
 async function updateProfileSuccess(
   testId: string,
   userId: string,
   language: string,
   profile: string,
-  goals: string[]
+  goals: string[],
+  proficiencyLevel: string
 ): Promise<void> {
   const batch = db.batch();
 
-  // Update test document
+  // Update test document - store only metadata, NOT the full profile
   const testRef = db.collection('onboardingTests').doc(testId);
   batch.update(testRef, {
     profileStatus: 'completed',
-    aiProfile: profile,
-    goals: goals,
+    proficiencyLevel: proficiencyLevel, // Store only proficiency level in test
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
   });
 
-  // Update user profile
+  // Update user profile - this is the ONLY place where full profile is stored
   const userRef = db.collection('users').doc(userId);
   const userDoc = await userRef.get();
 
@@ -374,10 +382,10 @@ async function updateProfileSuccess(
     if (lang.languageCode === language) {
       return {
         ...lang,
-        currentProfile: profile,
+        currentProfile: profile, // Full profile stored here only
         goals: goals,
-        proficiencyLevel: extractProficiencyLevel(profile),
-        lastUpdated: admin.firestore.Timestamp.now() // Use Timestamp.now() instead of serverTimestamp() in arrays
+        proficiencyLevel: proficiencyLevel, // From AI JSON response, not extracted
+        lastUpdated: admin.firestore.Timestamp.now()
       };
     }
     return lang;
@@ -389,18 +397,4 @@ async function updateProfileSuccess(
   });
 
   await batch.commit();
-}
-
-/**
- * Extract proficiency level from profile text
- */
-function extractProficiencyLevel(profile: string): string {
-  const lowercaseProfile = profile.toLowerCase();
-
-  if (lowercaseProfile.includes('advanced')) return 'Advanced';
-  if (lowercaseProfile.includes('intermediate')) return 'Intermediate';
-  if (lowercaseProfile.includes('elementary')) return 'Elementary';
-  if (lowercaseProfile.includes('beginner')) return 'Beginner';
-
-  return 'Beginner';
 }

@@ -13,18 +13,21 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import LoadingScreen from '../components/LoadingScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
+import { ProfileViewScreen } from '../screens/ProfileViewScreen';
 import { WelcomeScreen } from '../screens/onboarding/WelcomeScreen';
 import { LanguageSelectionScreen } from '../screens/onboarding/LanguageSelectionScreen';
 import { TestConfirmationScreen } from '../screens/onboarding/TestConfirmationScreen';
 import { TestScreen } from '../screens/onboarding/TestScreen';
 import { ProfileGenerationScreen } from '../screens/onboarding/ProfileGenerationScreen';
 import { ProfileSummaryScreen } from '../screens/onboarding/ProfileSummaryScreen';
-import type { OnboardingScreen, LanguageCode } from '../types/onboarding';
+import type { OnboardingScreen, LanguageCode, UserLanguage } from '../types/onboarding';
 
 export default function MainNavigator() {
   const { user } = useAuth();
   const { userProfile, loading, currentLanguage } = useOnboarding();
   const [showingOnboarding, setShowingOnboarding] = useState(false);
+  const [showingProfile, setShowingProfile] = useState(false);
+  const [viewingLanguage, setViewingLanguage] = useState<UserLanguage | null>(null);
   const [currentScreen, setCurrentScreen] = useState<OnboardingScreen>('welcome');
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
@@ -78,6 +81,27 @@ export default function MainNavigator() {
     }} />;
   }
 
+  // PROFILE VIEW: User is viewing a specific language profile
+  if (showingProfile && viewingLanguage) {
+    console.log('MainNavigator - Showing Profile View');
+    const languageNameMap: Record<string, string> = {
+      ko: 'Korean',
+      zh: 'Chinese',
+      ja: 'Japanese',
+      es: 'Spanish'
+    };
+    return (
+      <ProfileViewScreen
+        language={viewingLanguage}
+        languageName={languageNameMap[viewingLanguage.languageCode] || viewingLanguage.languageCode}
+        onBack={() => {
+          setShowingProfile(false);
+          setViewingLanguage(null);
+        }}
+      />
+    );
+  }
+
   // EXISTING USER: Has languages → Show Dashboard
   if (!showingOnboarding) {
     console.log('MainNavigator - Showing Dashboard (showingOnboarding=false, has languages)');
@@ -85,6 +109,10 @@ export default function MainNavigator() {
       <DashboardScreen
         onResumeOnboarding={hasInProgressOnboarding ? handleStartOnboarding : undefined}
         onAddLanguage={handleStartNewLanguage}
+        onViewProfile={(language) => {
+          setViewingLanguage(language);
+          setShowingProfile(true);
+        }}
       />
     );
   }

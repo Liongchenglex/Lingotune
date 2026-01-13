@@ -11,26 +11,30 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../contexts/OnboardingContext';
 import { generateProfileForTest } from '../services/profileGeneration';
-import type { OnboardingTest } from '../types/onboarding';
+import type { OnboardingTest, UserLanguage } from '../types/onboarding';
 
 interface DashboardScreenProps {
   onResumeOnboarding?: () => void; // Callback to resume incomplete onboarding
   onAddLanguage?: () => void; // Callback to navigate to language selection
+  onViewProfile?: (language: UserLanguage) => void; // Callback to view language profile
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onResumeOnboarding,
-  onAddLanguage
+  onAddLanguage,
+  onViewProfile
 }) => {
   const { user, signOut } = useAuth();
   const { userProfile } = useOnboarding();
   const [profileStatuses, setProfileStatuses] = useState<Record<string, 'pending' | 'completed' | 'failed' | 'loading'>>({});
+  const [regeneratingLanguage, setRegeneratingLanguage] = useState<string | null>(null); // Track which language is being regenerated
+  const [cooldownTimers, setCooldownTimers] = useState<Record<string, number>>({}); // Track cooldown for each language
 
   // Track completion at LANGUAGE LEVEL (not user.onboardingCompleted)
   const hasCompletedLanguage = userProfile?.languages.some(lang => lang.onboardingStatus === 'completed');
@@ -93,40 +97,88 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   }, [languageKey]);
 
   /**
-   * Handle profile regeneration
+   * Handle cooldown timer countdown
+   */
+  useEffect(() => {
+    const intervals: NodeJS.Timeout[] = [];
+
+    Object.keys(cooldownTimers).forEach((languageCode) => {
+      if (cooldownTimers[languageCode] > 0) {
+        const interval = setInterval(() => {
+          setCooldownTimers((prev) => {
+            const newTimers = { ...prev };
+            if (newTimers[languageCode] > 0) {
+              newTimers[languageCode] -= 1;
+            } else {
+              delete newTimers[languageCode];
+            }
+            return newTimers;
+          });
+        }, 1000);
+        intervals.push(interval);
+      }
+    });
+
+    return () => {
+      intervals.forEach((interval) => clearInterval(interval));
+    };
+  }, [cooldownTimers]);
+
+  /**
+   * Handle profile regeneration with loading state and cooldown
    */
   const handleRegenerateProfile = async (languageCode: string, testId: string) => {
     console.log('DashboardScreen - handleRegenerateProfile called:', { languageCode, testId });
 
+    // Check cooldown
+    if (cooldownTimers[languageCode] && cooldownTimers[languageCode] > 0) {
+      Alert.alert(
+        'Please Wait',
+        `You can regenerate again in ${cooldownTimers[languageCode]} seconds.`
+      );
+      return;
+    }
+
     try {
-      // Show loading state
-      Alert.alert('Generating Profile', 'Please wait while we generate your profile...');
+      // Set loading state
+      setRegeneratingLanguage(languageCode);
+      setProfileStatuses((prev) => ({ ...prev, [languageCode]: 'loading' }));
 
       const result = await generateProfileForTest(testId);
 
       if (result.success && result.profile) {
         console.log('DashboardScreen - Profile regenerated successfully');
 
-        // Refresh profile statuses to reflect the new 'completed' status
-        const statuses = { ...profileStatuses };
-        statuses[languageCode] = 'completed';
-        setProfileStatuses(statuses);
+        // Update status to completed
+        setProfileStatuses((prev) => ({ ...prev, [languageCode]: 'completed' }));
 
         Alert.alert(
           'Success!',
           'Your profile has been generated successfully.',
           [{ text: 'OK' }]
         );
+
+        // Set 30-second cooldown
+        setCooldownTimers((prev) => ({ ...prev, [languageCode]: 30 }));
       } else {
         throw new Error('Invalid response from profile generation');
       }
     } catch (error: any) {
       console.error('DashboardScreen - Failed to regenerate profile:', error);
+
+      // Reset status to failed
+      setProfileStatuses((prev) => ({ ...prev, [languageCode]: 'failed' }));
+
       Alert.alert(
         'Error',
         'Failed to generate profile. Please try again later.',
         [{ text: 'OK' }]
       );
+
+      // Set 20-second cooldown even on failure to prevent spam
+      setCooldownTimers((prev) => ({ ...prev, [languageCode]: 20 }));
+    } finally {
+      setRegeneratingLanguage(null);
     }
   };
 
@@ -243,17 +295,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 style={[
                   styles.startButton,
                   hasInProgressOnboarding && styles.startButtonDisabled,
-                  (profileStatuses[language.languageCode] === 'pending' || profileStatuses[language.languageCode] === 'failed') && styles.regenerateButton
+                  (profileStatuses[language.languageCode] === 'pending' || profileStatuses[language.languageCode] === 'failed') && styles.regenerateButton,
+                  regeneratingLanguage === language.languageCode && styles.loadingButton
                 ]}
                 activeOpacity={0.7}
-                disabled={hasInProgressOnboarding}
+                disabled={hasInProgressOnboarding || regeneratingLanguage === language.languageCode || (cooldownTimers[language.languageCode] && cooldownTimers[language.languageCode] > 0)}
                 onPress={() => {
                   console.log('='.repeat(80));
                   console.log('DashboardScreen - Button pressed for language:', language.languageCode);
                   const status = profileStatuses[language.languageCode];
                   console.log('DashboardScreen - Profile status:', status);
 
-                  if (status === 'pending' || status === 'failed') {
+                  if (status === 'pending' || status === 'failed' || status === 'loading') {
                     const testId = language.testHistory[language.testHistory.length - 1];
                     console.log('DashboardScreen - Test ID:', testId);
                     if (testId) {
@@ -264,19 +317,31 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                       Alert.alert('Error', 'No test found for this language.');
                     }
                   } else {
-                    // TODO: Handle "Start Learning" action for completed profiles
-                    console.log('DashboardScreen - Start Learning pressed (not yet implemented)');
+                    // Handle "View Profile" action for completed profiles
+                    console.log('DashboardScreen - View Profile pressed');
+                    if (onViewProfile) {
+                      onViewProfile(language);
+                    }
                   }
                   console.log('='.repeat(80));
                 }}
               >
-                <Text style={styles.startButtonText}>
-                  {hasInProgressOnboarding
-                    ? 'Complete Onboarding First'
-                    : profileStatuses[language.languageCode] === 'pending' || profileStatuses[language.languageCode] === 'failed'
-                    ? '🔄 Regenerate Profile'
-                    : 'Start Learning'}
-                </Text>
+                {regeneratingLanguage === language.languageCode ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text style={[styles.startButtonText, styles.loadingText]}>Generating...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.startButtonText}>
+                    {hasInProgressOnboarding
+                      ? 'Complete Onboarding First'
+                      : cooldownTimers[language.languageCode] && cooldownTimers[language.languageCode] > 0
+                      ? `Wait ${cooldownTimers[language.languageCode]}s`
+                      : profileStatuses[language.languageCode] === 'pending' || profileStatuses[language.languageCode] === 'failed'
+                      ? '🔄 Regenerate Profile'
+                      : 'View Profile'}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           ))}
@@ -532,6 +597,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingButton: {
+    backgroundColor: '#D97706', // Darker orange for loading state
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  loadingText: {
+    marginLeft: 8,
   },
   featureCard: {
     flexDirection: 'row',
