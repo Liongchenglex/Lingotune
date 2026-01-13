@@ -1,17 +1,14 @@
-# Firebase Functions Framework for Python
-functions-framework==3.*
-
 # Firebase Admin SDK
 firebase-admin==6.2.0
+
+# Firebase Functions for Python (2nd gen)
+firebase-functions==0.4.0
 
 # KoNLPy - Korean NLP library
 konlpy==0.6.0
 
 # JPype1 - Java bridge for KoNLPy
 JPype1==1.4.1
-
-# Korean romanization
-# Note: hangul-romanize may not exist, will use custom implementation
 
 # HTTP client for dictionary APIs
 requests==2.31.0
