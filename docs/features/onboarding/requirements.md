@@ -62,8 +62,12 @@ System sends test data to AI and generates personalized diagnosis via callable F
 ### 2.6 Dashboard Access Control
 System shows dashboard with features disabled until onboarding completion (non-blocking banner approach).
 
+**Note**: Full dashboard requirements and implementation details are now documented in `/docs/features/dashboard/requirements.md` (Features 1-2).
+
 ### 2.7 Profile Regeneration (NEW - 2026-01-12)
 User can manually retry profile generation from dashboard if initial generation fails or takes too long.
+
+**Note**: This feature has been moved to dashboard documentation. See `/docs/features/dashboard/requirements.md` (Feature 2: AI Profile Viewing & Regeneration) for complete requirements.
 
 ---
 
@@ -380,6 +384,12 @@ Dashboard → User: Show unlocked dashboard
 ---
 
 # FLOW 2: Profile Regeneration (NEW - 2026-01-12)
+
+**⚠️ NOTE: This section has been moved to `/docs/features/dashboard/requirements.md` (Feature 2: AI Profile Viewing & Regeneration).**
+
+**For historical reference and context, the original requirements are preserved below. For the current canonical requirements, please refer to the dashboard documentation.**
+
+---
 
 ## Step-by-Step Behaviour
 

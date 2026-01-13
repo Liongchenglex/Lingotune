@@ -31,7 +31,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onViewProfile
 }) => {
   const { user, signOut } = useAuth();
-  const { userProfile } = useOnboarding();
+  const { userProfile, refreshUserProfile } = useOnboarding();
   const [profileStatuses, setProfileStatuses] = useState<Record<string, 'pending' | 'completed' | 'failed' | 'loading'>>({});
   const [regeneratingLanguage, setRegeneratingLanguage] = useState<string | null>(null); // Track which language is being regenerated
   const [cooldownTimers, setCooldownTimers] = useState<Record<string, number>>({}); // Track cooldown for each language
@@ -42,6 +42,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const activeLanguages = userProfile?.languages.filter(
     (lang) => lang.onboardingStatus === 'completed'
   );
+
+  /**
+   * Refresh user profile on mount to get latest data from Firestore
+   * This ensures we have the updated profile after generation
+   */
+  useEffect(() => {
+    console.log('DashboardScreen - Refreshing user profile on mount');
+    refreshUserProfile();
+  }, []);
 
   // Create stable dependency key for useEffect
   // Only depends on userProfile (single reference), not the array
@@ -54,6 +63,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   /**
    * Check profile status for each completed language
+   *
+   * Priority:
+   * 1. If language.currentProfile exists → 'completed' (profile is stored in user doc)
+   * 2. Otherwise, check onboardingTest.profileStatus (for legacy or pending cases)
    */
   useEffect(() => {
     const checkProfileStatuses = async () => {
@@ -68,6 +81,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       const statuses: Record<string, 'pending' | 'completed' | 'failed' | 'loading'> = {};
 
       for (const language of completedLanguages) {
+        // Priority 1: Check if profile exists in user document (DRY approach)
+        if (language.currentProfile) {
+          statuses[language.languageCode] = 'completed';
+          console.log(`DashboardScreen - ${language.languageCode}: Profile found in user.languages.currentProfile`);
+          continue;
+        }
+
+        // Priority 2: Check test document for status (fallback for pending/failed)
         const mostRecentTestId = language.testHistory[language.testHistory.length - 1];
 
         if (!mostRecentTestId) {
@@ -80,6 +101,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           if (testDoc.exists()) {
             const testData = testDoc.data() as OnboardingTest;
             statuses[language.languageCode] = testData.profileStatus;
+            console.log(`DashboardScreen - ${language.languageCode}: Status from test document: ${testData.profileStatus}`);
           } else {
             statuses[language.languageCode] = 'pending';
           }
@@ -89,7 +111,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         }
       }
 
-      console.log('DashboardScreen - Profile statuses fetched:', statuses);
+      console.log('DashboardScreen - Final profile statuses:', statuses);
       setProfileStatuses(statuses);
     };
 

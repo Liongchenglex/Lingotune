@@ -245,4 +245,5 @@ export interface OnboardingContextValue extends OnboardingContextState {
   checkOnboardingStatus: () => boolean; // Returns true if onboarding complete
   getCurrentLanguageData: () => UserLanguage | null;
   clearError: () => void;
+  refreshUserProfile: () => Promise<void>; // Refresh user profile from Firestore
 }

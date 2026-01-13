@@ -377,6 +377,38 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setError(null);
   };
 
+  /**
+   * Refresh user profile from Firestore
+   * Useful after profile generation or other background updates
+   */
+  const refreshUserProfile = async (): Promise<void> => {
+    if (!user) {
+      console.warn('refreshUserProfile - No user logged in');
+      return;
+    }
+
+    try {
+      console.log('refreshUserProfile - Fetching latest user profile from Firestore');
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+
+      if (userDoc.exists()) {
+        const data = userDoc.data() as UserProfile;
+        const profile: UserProfile = {
+          ...data,
+          onboardingCompleted: data.onboardingCompleted ?? false,
+          languages: data.languages ?? [],
+        };
+
+        setUserProfile(profile);
+        console.log('refreshUserProfile - Profile updated successfully');
+      } else {
+        console.warn('refreshUserProfile - User document not found');
+      }
+    } catch (err: any) {
+      console.error('refreshUserProfile - Failed to refresh:', err);
+    }
+  };
+
   const value: OnboardingContextValue = {
     userProfile,
     currentLanguage,
@@ -389,6 +421,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     checkOnboardingStatus,
     getCurrentLanguageData,
     clearError,
+    refreshUserProfile,
   };
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
