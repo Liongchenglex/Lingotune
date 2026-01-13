@@ -81,6 +81,18 @@ service cloud.firestore {
       allow write: if false; // Use Cloud Functions for updates
     }
 
+    // ===== MUSIC FEATURE =====
+
+    // Songs collection - song metadata and lyrics info
+    // Users can read all songs, but can only write songs they add
+    match /songs/{songId} {
+      allow read: if isAuthenticated();
+      // Allow users to create/update song entries
+      // Songs are shared resources - any authenticated user can add them
+      allow create, update: if isAuthenticated();
+      allow delete: if false; // Never delete songs (shared resource)
+    }
+
     // ===== ONBOARDING FEATURE =====
 
     // Question bank - read-only for authenticated users

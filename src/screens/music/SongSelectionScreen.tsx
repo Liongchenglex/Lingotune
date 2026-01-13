@@ -25,13 +25,14 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, doc, writeBatch, Timestamp, updateDoc, arrayUnion } from 'firebase/firestore';
 
 interface SongSelectionScreenProps {
+  language: import('../../types/onboarding').UserLanguage;
   onBack: () => void;
-  onSongSelected: () => void;
+  onSongSelected: (songId: string) => void;
 }
 
-export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ onBack, onSongSelected }) => {
+export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ language, onBack, onSongSelected }) => {
   const { user } = useAuth();
-  const { currentLanguage, userProfile, refreshUserProfile } = useOnboarding();
+  const { userProfile, refreshUserProfile } = useOnboarding();
   const [songs, setSongs] = useState<SpotifyTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +54,7 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ onBack
 
       // Search for songs in user's target language
       const result = await searchSongs({
-        language: currentLanguage?.languageCode,
+        language: language?.languageCode,
         limit: 20,
       });
 
@@ -124,14 +125,14 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ onBack
       // Step 2: Validate language
       const validation: LanguageValidationResult = validateSongLanguage(
         lyrics,
-        currentLanguage!.languageCode
+        language!.languageCode
       );
 
       // Handle validation results
       if (validation.valid) {
         // Language valid - proceed to save song
         await saveSong(song, lyrics, validation, lyricsData);
-        onSongSelected();
+        onSongSelected(song.id);
       } else if (validation.reason === 'medium_confidence_warning') {
         // Medium confidence - show warning and let user choose
         Alert.alert(
@@ -143,7 +144,7 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ onBack
               text: 'Add Anyway',
               onPress: async () => {
                 await saveSong(song, lyrics, validation, lyricsData);
-                onSongSelected();
+                onSongSelected(song.id);
               },
             },
           ]
@@ -152,7 +153,7 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ onBack
         // Wrong language detected
         Alert.alert(
           '❌ Wrong Language Detected',
-          `This song appears to be in ${getLanguageName(validation.detected)}, but you're learning ${getLanguageName(currentLanguage!.languageCode)}.\n\nDetected: ${getLanguageName(validation.detected)} (${formatConfidence(validation.confidence)})\nExpected: ${getLanguageName(currentLanguage!.languageCode)}`,
+          `This song appears to be in ${getLanguageName(validation.detected)}, but you're learning ${getLanguageName(language!.languageCode)}.\n\nDetected: ${getLanguageName(validation.detected)} (${formatConfidence(validation.confidence)})\nExpected: ${getLanguageName(language!.languageCode)}`,
           [
             { text: 'Try Another Song', onPress: () => setSelectedSong(null) },
           ]
@@ -190,7 +191,7 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ onBack
     validation: LanguageValidationResult,
     lyricsData: any
   ) => {
-    if (!user || !userProfile || !currentLanguage) {
+    if (!user || !userProfile || !language) {
       throw new Error('User not authenticated or profile not loaded');
     }
 
@@ -214,33 +215,55 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ onBack
         geniusUrl: lyricsData.geniusUrl,
         lyricsLanguage: validation.detected,
         lyricsConfidence: validation.confidence,
-        language: currentLanguage.languageCode,
+        language: language.languageCode,
         addedAt: Timestamp.now(),
       });
 
       await batch.commit();
 
-      // Update user's currentSong (separate operation to use array update)
+      // Update user's currentSong
+      // IMPORTANT: We must update the entire languages array to avoid Firestore
+      // replacing the language object. Field path syntax (languages.0.field)
+      // replaces the entire element instead of merging.
       const userRef = doc(db, 'users', user.uid);
 
       // Find the index of the current language in the languages array
       const languageIndex = userProfile.languages.findIndex(
-        lang => lang.languageCode === currentLanguage.languageCode
+        lang => lang.languageCode === language.languageCode
       );
 
       if (languageIndex === -1) {
         throw new Error('Current language not found in user profile');
       }
 
-      // Update the specific language's currentSong
+      // Clone and update the entire languages array
+      const updatedLanguages = userProfile.languages.map((lang, idx) => {
+        if (idx === languageIndex) {
+          // Add song metadata to the songs array (avoid duplicates)
+          const existingSongs = lang.songs || [];
+          const songExists = existingSongs.some(s => s.id === song.id);
+
+          const newSongs = songExists
+            ? existingSongs // Already added, don't duplicate
+            : [...existingSongs, {
+                id: song.id,
+                title: song.title,
+                artist: song.artist,
+                addedAt: Timestamp.now(),
+              }]; // Add to end of array
+
+          return {
+            ...lang,
+            songs: newSongs,
+            lastUpdated: Timestamp.now(),
+          };
+        }
+        return lang;
+      });
+
+      // Write the entire updated array
       await updateDoc(userRef, {
-        [`languages.${languageIndex}.currentSong`]: {
-          id: song.id,
-          title: song.title,
-          artist: song.artist,
-          addedAt: Timestamp.now(),
-        },
-        [`languages.${languageIndex}.lastUpdated`]: Timestamp.now(),
+        languages: updatedLanguages,
       });
 
       // Refresh user profile to get updated data

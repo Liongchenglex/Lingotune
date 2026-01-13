@@ -33,6 +33,7 @@ export default function MainNavigator() {
   const [showingSongSelection, setShowingSongSelection] = useState(false);
   const [showingLyrics, setShowingLyrics] = useState(false);
   const [musicLanguage, setMusicLanguage] = useState<UserLanguage | null>(null);
+  const [viewingSongId, setViewingSongId] = useState<string | null>(null);
   const [currentScreen, setCurrentScreen] = useState<OnboardingScreen>('welcome');
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
@@ -87,12 +88,14 @@ export default function MainNavigator() {
   }
 
   // LYRICS VIEW: User is viewing song lyrics
-  if (showingLyrics && musicLanguage) {
+  if (showingLyrics && viewingSongId) {
     console.log('MainNavigator - Showing Lyrics View');
     return (
       <LyricsScreen
+        songId={viewingSongId}
         onBack={() => {
           setShowingLyrics(false);
+          setViewingSongId(null);
           setMusicLanguage(null);
         }}
       />
@@ -104,14 +107,16 @@ export default function MainNavigator() {
     console.log('MainNavigator - Showing Song Selection');
     return (
       <SongSelectionScreen
+        language={musicLanguage}
         onBack={() => {
           setShowingSongSelection(false);
           setMusicLanguage(null);
         }}
-        onSongSelected={() => {
-          // Song was successfully selected, go back to dashboard
+        onSongSelected={(songId) => {
+          // Song was successfully selected, show lyrics
           setShowingSongSelection(false);
-          setMusicLanguage(null);
+          setViewingSongId(songId);
+          setShowingLyrics(true);
         }}
       />
     );
@@ -153,8 +158,9 @@ export default function MainNavigator() {
           setMusicLanguage(language);
           setShowingSongSelection(true);
         }}
-        onViewLyrics={(language) => {
+        onViewLyrics={(songId, language) => {
           setMusicLanguage(language);
+          setViewingSongId(songId);
           setShowingLyrics(true);
         }}
       />

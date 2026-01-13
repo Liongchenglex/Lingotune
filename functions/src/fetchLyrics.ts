@@ -60,8 +60,16 @@ interface FetchLyricsError {
  */
 export const fetchLyrics = functions.https.onCall(
   async (data: FetchLyricsRequest, context): Promise<FetchLyricsResponse | FetchLyricsError> => {
+    console.log('🎤🎤🎤 NEW FETCH LYRICS VERSION 2026-01-13 🎤🎤🎤');
+    console.log('========================================');
+    console.log('fetchLyrics CALLED - HARDCODED VERSION');
+    console.log('Data received:', JSON.stringify(data, null, 2));
+    console.log('Auth:', context.auth ? 'authenticated' : 'not authenticated');
+    console.log('========================================');
+
     // Authentication check
     if (!context.auth) {
+      console.log('ERROR: No authentication');
       return {
         error: 'lyrics_not_found',
         message: 'Authentication required',
@@ -71,6 +79,7 @@ export const fetchLyrics = functions.https.onCall(
 
     // Validate input
     if (!data.songId) {
+      console.log('ERROR: No songId provided');
       return {
         error: 'lyrics_not_found',
         message: 'Missing required field: songId',
@@ -81,11 +90,14 @@ export const fetchLyrics = functions.https.onCall(
     try {
       // Load songs from JSON
       const allSongs: HardcodedSong[] = (songsData as any).default || songsData;
+      console.log('Total songs loaded from JSON:', allSongs.length);
 
       // Find song by ID
       const song = allSongs.find(s => s.id === data.songId);
+      console.log('Song found:', song ? `${song.title} by ${song.artist}` : 'NOT FOUND');
 
       if (!song) {
+        console.log('ERROR: Song not found with ID:', data.songId);
         return {
           error: 'lyrics_not_found',
           message: 'Song not found. Please try another song.',
@@ -94,7 +106,11 @@ export const fetchLyrics = functions.https.onCall(
         };
       }
 
-      if (!song.lyrics || song.lyrics.trim().length < 50) {
+      const lyricsLength = song.lyrics?.trim().length || 0;
+      console.log('Lyrics length:', lyricsLength, 'characters');
+
+      if (!song.lyrics || lyricsLength < 50) {
+        console.log('ERROR: Lyrics too short or missing');
         return {
           error: 'lyrics_not_found',
           message: 'Lyrics not available for this song.',
@@ -103,6 +119,11 @@ export const fetchLyrics = functions.https.onCall(
         };
       }
 
+      console.log('✅ SUCCESS: Returning lyrics');
+      console.log('Lyrics preview (first 100 chars):', song.lyrics.substring(0, 100) + '...');
+      console.log('🎤🎤🎤 END FETCH LYRICS VERSION 🎤🎤🎤');
+      console.log('========================================');
+
       return {
         lyrics: song.lyrics,
         source: 'hardcoded',
@@ -110,7 +131,11 @@ export const fetchLyrics = functions.https.onCall(
         geniusUrl: `https://example.com/song/${song.id}`, // Placeholder
       };
     } catch (error: any) {
-      console.error('Fetch lyrics error:', error.message);
+      console.error('========================================');
+      console.error('❌ ERROR in fetchLyrics:');
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+      console.error('========================================');
       return {
         error: 'api_unavailable',
         message: 'Failed to load lyrics. Please try again.',

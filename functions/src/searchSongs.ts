@@ -67,8 +67,16 @@ interface SearchSongsError {
  */
 export const searchSongs = functions.https.onCall(
   async (data: SearchSongsRequest, context): Promise<SearchSongsResponse | SearchSongsError> => {
+    console.log('🚀🚀🚀 NEW FUNCTION VERSION 2026-01-13 10:00 AM 🚀🚀🚀');
+    console.log('========================================');
+    console.log('searchSongs CALLED - LATEST VERSION WITH NO QUERY VALIDATION');
+    console.log('Data received:', JSON.stringify(data, null, 2));
+    console.log('Auth:', context.auth ? 'authenticated' : 'not authenticated');
+    console.log('========================================');
+
     // Authentication check
     if (!context.auth) {
+      console.log('ERROR: No authentication');
       return {
         error: 'invalid_query',
         message: 'Authentication required',
@@ -81,8 +89,14 @@ export const searchSongs = functions.https.onCall(
       const language = data.language;
       const limit = data.limit || 20;
 
+      console.log('Parsed params:');
+      console.log('  - query:', query);
+      console.log('  - language:', language);
+      console.log('  - limit:', limit);
+
       // Load songs from JSON
       const allSongs: HardcodedSong[] = (songsData as any).default || songsData;
+      console.log('Total songs loaded from JSON:', allSongs.length);
 
       // Filter songs
       let filteredSongs = allSongs;
@@ -90,18 +104,25 @@ export const searchSongs = functions.https.onCall(
       // Filter by language if specified
       if (language) {
         filteredSongs = filteredSongs.filter(song => song.language === language);
+        console.log(`After language filter (${language}):`, filteredSongs.length, 'songs');
       }
 
-      // Filter by search query if specified
-      if (query.length >= 2) {
+      // REMOVED: Query validation - allow any query length including empty
+      // Filter by search query if specified (NO LENGTH CHECK)
+      if (query.length > 0) {
+        console.log('Applying search query filter (any length)');
         filteredSongs = filteredSongs.filter(song =>
           song.title.toLowerCase().includes(query) ||
           song.artist.toLowerCase().includes(query)
         );
+        console.log('After query filter:', filteredSongs.length, 'songs');
+      } else {
+        console.log('No query provided, returning all songs for language');
       }
 
       // Apply limit
       const limitedSongs = filteredSongs.slice(0, limit);
+      console.log('After limit:', limitedSongs.length, 'songs');
 
       // Transform to match our Song interface (exclude lyrics from response)
       const tracks = limitedSongs.map(song => ({
@@ -115,12 +136,20 @@ export const searchSongs = functions.https.onCall(
         previewUrl: null, // No preview for hardcoded songs
       }));
 
+      console.log('✅ SUCCESS: Returning', tracks.length, 'tracks');
+      console.log('🚀🚀🚀 END NEW FUNCTION VERSION 🚀🚀🚀');
+      console.log('========================================');
+
       return {
         tracks,
         total: filteredSongs.length,
       };
     } catch (error: any) {
-      console.error('Search songs error:', error.message);
+      console.error('========================================');
+      console.error('❌ ERROR in searchSongs:');
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+      console.error('========================================');
       return {
         error: 'api_unavailable',
         message: 'Failed to load songs. Please try again.',

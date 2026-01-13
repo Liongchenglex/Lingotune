@@ -16,30 +16,35 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { useOnboarding } from '../../contexts/OnboardingContext';
-import { CurrentSong } from '../../types/onboarding';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+
+interface Song {
+  id: string;
+  title: string;
+  artist: string;
+  album?: string;
+}
 
 interface LyricsScreenProps {
+  songId: string;
   onBack: () => void;
 }
 
-export const LyricsScreen: React.FC<LyricsScreenProps> = ({ onBack }) => {
-  const { currentLanguage } = useOnboarding();
+export const LyricsScreen: React.FC<LyricsScreenProps> = ({ songId, onBack }) => {
+  const [song, setSong] = useState<Song | null>(null);
   const [lyrics, setLyrics] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const currentSong: CurrentSong | undefined = currentLanguage?.currentSong;
-
   useEffect(() => {
-    if (currentSong) {
-      loadLyrics();
+    if (songId) {
+      loadSongAndLyrics();
     }
-  }, [currentSong]);
+  }, [songId]);
 
-  const loadLyrics = async () => {
-    if (!currentSong) {
+  const loadSongAndLyrics = async () => {
+    if (!songId) {
       setError('No song selected');
       setLoading(false);
       return;
@@ -49,13 +54,27 @@ export const LyricsScreen: React.FC<LyricsScreenProps> = ({ onBack }) => {
       setLoading(true);
       setError(null);
 
+      // Fetch song data from Firestore
+      const db = getFirestore();
+      const songDoc = await getDoc(doc(db, 'songs', songId));
+
+      if (!songDoc.exists()) {
+        setError('Song not found');
+        setLoading(false);
+        return;
+      }
+
+      const songData = songDoc.data() as Song;
+      setSong(songData);
+
+      // Fetch lyrics from Firebase Function
       const functions = getFunctions();
       const fetchLyrics = httpsCallable(functions, 'fetchLyrics');
 
       const result = await fetchLyrics({
-        songId: currentSong.id,
-        title: currentSong.title,
-        artist: currentSong.artist,
+        songId: songData.id,
+        title: songData.title,
+        artist: songData.artist,
       });
 
       const data = result.data as any;
@@ -67,14 +86,14 @@ export const LyricsScreen: React.FC<LyricsScreenProps> = ({ onBack }) => {
 
       setLyrics(data.lyrics || '');
     } catch (err: any) {
-      console.error('Load lyrics error:', err);
-      setError('Failed to load lyrics. Please try again.');
+      console.error('Load song and lyrics error:', err);
+      setError('Failed to load song. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!currentSong) {
+  if (!song && !loading) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -123,7 +142,7 @@ export const LyricsScreen: React.FC<LyricsScreenProps> = ({ onBack }) => {
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>❌</Text>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadLyrics}>
+          <TouchableOpacity style={styles.retryButton} onPress={loadSongAndLyrics}>
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -140,8 +159,8 @@ export const LyricsScreen: React.FC<LyricsScreenProps> = ({ onBack }) => {
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Lyrics</Text>
-          <Text style={styles.headerSubtitle}>{currentSong.title}</Text>
-          <Text style={styles.headerArtist}>{currentSong.artist}</Text>
+          <Text style={styles.headerSubtitle}>{song.title}</Text>
+          <Text style={styles.headerArtist}>{song.artist}</Text>
         </View>
       </View>
 

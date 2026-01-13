@@ -24,7 +24,7 @@ interface DashboardScreenProps {
   onAddLanguage?: () => void; // Callback to navigate to language selection
   onViewProfile?: (language: UserLanguage) => void; // Callback to view language profile
   onChooseSong?: (language: UserLanguage) => void; // Callback to navigate to song selection
-  onViewLyrics?: (language: UserLanguage) => void; // Callback to view lyrics screen
+  onViewLyrics?: (songId: string, language: UserLanguage) => void; // Callback to view lyrics screen
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
@@ -399,8 +399,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </Text>
                 </View>
 
-                {/* Empty State - No song selected */}
-                {!language.currentSong && (
+                {/* Empty State - No songs */}
+                {(!language.songs || language.songs.length === 0) && (
                   <View style={styles.musicEmptyState}>
                     <Text style={styles.musicEmptyText}>
                       Choose a song to start learning vocabulary
@@ -421,27 +421,34 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </View>
                 )}
 
-                {/* Active State - Song selected */}
-                {language.currentSong && (
+                {/* Active State - Songs list */}
+                {language.songs && language.songs.length > 0 && (
                   <View style={styles.musicActiveState}>
-                    <TouchableOpacity
-                      style={styles.currentSongInfo}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        if (onViewLyrics) {
-                          onViewLyrics(language);
-                        } else {
-                          Alert.alert('Coming Soon', 'Lyrics view will be available soon!');
-                        }
-                      }}
-                    >
-                      <Text style={styles.currentSongIcon}>🎵</Text>
-                      <View style={styles.currentSongText}>
-                        <Text style={styles.currentSongTitle}>{language.currentSong.title}</Text>
-                        <Text style={styles.currentSongArtist}>{language.currentSong.artist}</Text>
-                        <Text style={styles.tapToViewLyrics}>Tap to view lyrics</Text>
-                      </View>
-                    </TouchableOpacity>
+                    <Text style={styles.songsListHeader}>
+                      Your Songs ({language.songs.length})
+                    </Text>
+                    {language.songs.map((song) => (
+                      <TouchableOpacity
+                        key={song.id}
+                        style={styles.songListItem}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          if (onViewLyrics) {
+                            onViewLyrics(song.id, language);
+                          } else {
+                            Alert.alert('Coming Soon', 'Lyrics view will be available soon!');
+                          }
+                        }}
+                      >
+                        <Text style={styles.songListIcon}>🎵</Text>
+                        <View style={styles.songListText}>
+                          <Text style={styles.songListTitle}>{song.title}</Text>
+                          <Text style={styles.songListArtist}>{song.artist}</Text>
+                          <Text style={styles.tapToViewLyrics}>Tap to view lyrics</Text>
+                        </View>
+                        <Text style={styles.songChevron}>›</Text>
+                      </TouchableOpacity>
+                    ))}
                     <TouchableOpacity
                       style={styles.chooseSongButton}
                       activeOpacity={0.7}
@@ -453,7 +460,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                         }
                       }}
                     >
-                      <Text style={styles.chooseSongButtonText}>+ Choose Another Song</Text>
+                      <Text style={styles.chooseSongButtonText}>+ Add Another Song</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -833,6 +840,45 @@ const styles = StyleSheet.create({
     color: '#6366F1',
     fontSize: 14,
     fontWeight: '600',
+  },
+  songsListHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  songListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  songListIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  songListText: {
+    flex: 1,
+  },
+  songListTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  songListArtist: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  songChevron: {
+    fontSize: 20,
+    color: '#D1D5DB',
+    marginLeft: 8,
   },
   addLanguageButton: {
     backgroundColor: '#FFFFFF',
