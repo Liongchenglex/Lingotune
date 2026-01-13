@@ -38,11 +38,15 @@ export default function MainNavigator() {
   // SIMPLE MVP LOGIC:
   // - No languages started (length === 0) → Welcome Screen
   // - Has language(s) (length >= 1) → Dashboard
+  // Track completion at LANGUAGE LEVEL (not user.onboardingCompleted)
   const hasNoLanguages = !userProfile?.languages || userProfile.languages.length === 0;
   const hasInProgressOnboarding = currentLanguage && currentLanguage.onboardingStatus === 'in_progress';
+  const hasCompletedLanguage = userProfile?.languages.some(lang => lang.onboardingStatus === 'completed');
 
   console.log('MainNavigator - languages count:', userProfile?.languages?.length || 0);
   console.log('MainNavigator - hasNoLanguages:', hasNoLanguages);
+  console.log('MainNavigator - hasInProgressOnboarding:', hasInProgressOnboarding);
+  console.log('MainNavigator - hasCompletedLanguage:', hasCompletedLanguage);
   console.log('MainNavigator - showingOnboarding:', showingOnboarding);
 
   // Handle starting/restarting onboarding
@@ -64,8 +68,10 @@ export default function MainNavigator() {
     setShowingOnboarding(true);
   };
 
+
   // NEW USER: No languages started → Show Welcome Screen
   if (!showingOnboarding && hasNoLanguages) {
+    console.log('MainNavigator - Showing Welcome Screen (new user, no languages)');
     return <WelcomeScreen onContinue={() => {
       setCurrentScreen('language-selection');
       setShowingOnboarding(true);
@@ -74,6 +80,7 @@ export default function MainNavigator() {
 
   // EXISTING USER: Has languages → Show Dashboard
   if (!showingOnboarding) {
+    console.log('MainNavigator - Showing Dashboard (showingOnboarding=false, has languages)');
     return (
       <DashboardScreen
         onResumeOnboarding={hasInProgressOnboarding ? handleStartOnboarding : undefined}
@@ -118,9 +125,23 @@ export default function MainNavigator() {
 
     case 'profile-generation':
       // Get the most recent test ID from the user's test history
-      const recentTestId = userProfile?.languages.find(
-        (l) => l.onboardingStatus === 'in_progress'
-      )?.testHistory[0];
+      // After completeTest(), the language status is 'completed', so find the most recent completed language
+      console.log('profile-generation - Looking for test ID');
+      console.log('profile-generation - userProfile.languages:', JSON.stringify(userProfile?.languages, null, 2));
+
+      const recentLanguage = userProfile?.languages
+        .filter((l) => l.testHistory && l.testHistory.length > 0)
+        .sort((a, b) => {
+          // Sort by lastUpdated, most recent first
+          const aTime = a.lastUpdated?.seconds || 0;
+          const bTime = b.lastUpdated?.seconds || 0;
+          return bTime - aTime;
+        })[0];
+
+      const recentTestId = recentLanguage?.testHistory[recentLanguage.testHistory.length - 1];
+
+      console.log('profile-generation - Found recent language:', recentLanguage?.languageCode);
+      console.log('profile-generation - Recent test ID:', recentTestId);
 
       return (
         <ProfileGenerationScreen
@@ -131,8 +152,16 @@ export default function MainNavigator() {
             setCurrentScreen('profile-summary');
           }}
           onError={() => {
-            // On error, reset to welcome (could show error message)
-            setCurrentScreen('welcome');
+            // On error, go to dashboard (user can retry from there)
+            console.error('ProfileGenerationScreen error - going to dashboard');
+            setShowingOnboarding(false);
+            setCurrentScreen('welcome'); // Reset for next time
+          }}
+          onSkip={() => {
+            // User chose to skip waiting - go to dashboard
+            console.log('ProfileGenerationScreen - User skipped to dashboard');
+            setShowingOnboarding(false);
+            setCurrentScreen('welcome'); // Reset for next time
           }}
         />
       );
@@ -152,6 +181,14 @@ export default function MainNavigator() {
           languageName={selectedLanguage ? languageMap[selectedLanguage] : 'Korean'}
           onStartLearning={() => {
             // Return to dashboard after completing onboarding
+            console.log('='.repeat(80));
+            console.log('ProfileSummary - onStartLearning called');
+            console.log('ProfileSummary - userProfile:', userProfile?.uid);
+            console.log('ProfileSummary - userProfile.languages:', userProfile?.languages.length);
+            console.log('ProfileSummary - languages array:', JSON.stringify(userProfile?.languages, null, 2));
+            console.log('ProfileSummary - hasNoLanguages:', hasNoLanguages);
+            console.log('ProfileSummary - SETTING showingOnboarding to FALSE');
+            console.log('='.repeat(80));
             setShowingOnboarding(false);
             setCurrentScreen('welcome'); // Reset for next time
           }}

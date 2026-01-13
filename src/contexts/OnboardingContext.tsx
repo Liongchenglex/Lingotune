@@ -283,11 +283,19 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const completeTest = async (
     testData: Omit<OnboardingTest, 'testId' | 'createdAt' | 'updatedAt'>
   ): Promise<void> => {
+    console.log('='.repeat(80));
+    console.log('completeTest - START');
+    console.log('completeTest - user:', user?.uid);
+    console.log('completeTest - userProfile:', userProfile?.uid);
+    console.log('completeTest - currentLanguage:', currentLanguage?.languageCode);
+
     if (!user || !userProfile || !currentLanguage) {
+      console.error('completeTest - Missing required data!');
       throw new Error('No active onboarding session');
     }
 
     try {
+      console.log('completeTest - Creating test result document...');
       // Create test result document
       const testResult: Omit<OnboardingTest, 'testId'> = {
         ...testData,
@@ -297,43 +305,53 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       };
 
       const testDocRef = await addDoc(collection(db, 'onboardingTests'), testResult);
+      console.log('completeTest - Test document created:', testDocRef.id);
 
-      // Update user profile: mark onboarding complete, clear temp data
-      const isFirstLanguage = userProfile.languages.filter(
-        (lang) => lang.onboardingStatus === 'completed'
-      ).length === 0;
+      // Update user profile: mark onboarding complete at LANGUAGE LEVEL, clear temp data
+      console.log('completeTest - Current languages BEFORE update:', JSON.stringify(userProfile.languages, null, 2));
 
       const updatedLanguages = userProfile.languages.map((lang) => {
         if (lang.languageCode === currentLanguage.languageCode) {
+          console.log('completeTest - Updating language:', lang.languageCode);
+          console.log('completeTest - Old status:', lang.onboardingStatus);
           // Remove optional fields to avoid undefined values
           const { currentScreen, currentQuestionIndex, tempAnswers, ...rest } = lang;
-          return {
+          const updated = {
             ...rest,
             onboardingStatus: 'completed' as const,
             testHistory: [...lang.testHistory, testDocRef.id],
             lastUpdated: Timestamp.now(),
           };
+          console.log('completeTest - New status:', updated.onboardingStatus);
+          return updated;
         }
         return lang;
       });
 
-      // Update Firestore
+      console.log('completeTest - Updated languages AFTER map:', JSON.stringify(updatedLanguages, null, 2));
+
+      // Update Firestore (track completion at LANGUAGE LEVEL only)
+      console.log('completeTest - Updating Firestore...');
       await updateDoc(doc(db, 'users', user.uid), {
         languages: updatedLanguages,
-        onboardingCompleted: isFirstLanguage ? true : userProfile.onboardingCompleted,
         updatedAt: serverTimestamp(),
       });
+      console.log('completeTest - Firestore updated successfully!');
 
       // Update local state
+      console.log('completeTest - Updating local state...');
       setUserProfile({
         ...userProfile,
         languages: updatedLanguages,
-        onboardingCompleted: isFirstLanguage ? true : userProfile.onboardingCompleted,
       });
+      console.log('completeTest - Local state updated!');
 
       setCurrentLanguage(null); // Clear current language (onboarding complete)
+      console.log('completeTest - COMPLETE');
+      console.log('='.repeat(80));
     } catch (err: any) {
-      console.error('Failed to complete test:', err);
+      console.error('completeTest - ERROR:', err);
+      console.error('completeTest - Error stack:', err.stack);
       throw new Error('Unable to save your test results. Please try again.');
     }
   };

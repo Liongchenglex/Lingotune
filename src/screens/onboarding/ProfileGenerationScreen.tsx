@@ -11,80 +11,74 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../services/firebase';
-import { useAuth } from '../../contexts/AuthContext';
-import type { OnboardingTest } from '../../types/onboarding';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { generateProfileForTest } from '../../services/profileGeneration';
 
 interface ProfileGenerationScreenProps {
   testId: string; // Document ID of the test result
   onComplete: (profile: string, goals: string[]) => void;
   onError: () => void;
+  onSkip: () => void; // Navigate to dashboard without waiting
 }
 
 export const ProfileGenerationScreen: React.FC<ProfileGenerationScreenProps> = ({
   testId,
   onComplete,
   onError,
+  onSkip,
 }) => {
-  const { user } = useAuth();
   const [elapsedTime, setElapsedTime] = useState(0);
   const [message, setMessage] = useState('Analyzing your responses...');
+  const [showSkipButton, setShowSkipButton] = useState(false);
 
   /**
-   * Poll test document for profile completion
-   * Uses Firestore real-time listener for instant updates
+   * Call the generateProfile Firebase Function
    */
   useEffect(() => {
-    if (!user || !testId) {
+    if (!testId) {
+      console.error('ProfileGenerationScreen - No testId provided');
       onError();
       return;
     }
 
-    // Real-time listener on test document
-    const unsubscribe = onSnapshot(
-      doc(db, 'onboardingTests', testId),
-      (snapshot) => {
-        if (!snapshot.exists()) {
-          console.error('Test document not found');
-          onError();
-          return;
-        }
+    const callGenerateProfile = async () => {
+      console.log('ProfileGenerationScreen - Calling generateProfile for testId:', testId);
 
-        const testData = snapshot.data() as OnboardingTest;
+      try {
+        const result = await generateProfileForTest(testId);
 
-        // Check if profile is ready
-        if (testData.profileStatus === 'completed' && testData.aiProfile) {
-          console.log('Profile ready!');
-          onComplete(testData.aiProfile, testData.goals || []);
-        } else if (testData.profileStatus === 'failed') {
-          console.error('Profile generation failed');
+        if (result.success && result.profile) {
+          console.log('ProfileGenerationScreen - Profile generated successfully');
+          onComplete(result.profile, result.goals);
+        } else {
+          console.error('ProfileGenerationScreen - Invalid result from function');
           onError();
         }
-        // Otherwise keep waiting (profileStatus === 'pending')
-      },
-      (error) => {
-        console.error('Error listening to test document:', error);
-        onError();
+      } catch (error: any) {
+        console.error('ProfileGenerationScreen - Error calling function:', error);
+        // Don't immediately error - let the user skip to dashboard
+        // The retry function will be called when they click regenerate
+        setMessage('Having trouble generating your profile. You can skip to dashboard and retry later.');
       }
-    );
+    };
 
-    return () => unsubscribe();
-  }, [user, testId]);
+    callGenerateProfile();
+  }, [testId]);
 
   /**
    * Timer for elapsed time display
    * Updates message after 30 seconds
+   * Shows skip button after 20 seconds
    */
   useEffect(() => {
     const interval = setInterval(() => {
       setElapsedTime((prev) => {
         const newTime = prev + 1;
 
-        // Update message based on elapsed time
-        if (newTime === 30) {
-          setMessage('Still analyzing... This is taking a bit longer than usual.');
+        // Show skip button after 20 seconds
+        if (newTime === 20) {
+          setShowSkipButton(true);
+          setMessage('Taking longer than expected... You can continue to dashboard and retry later.');
         } else if (newTime === 60) {
           setMessage('Almost there... Generating your personalized profile.');
         } else if (newTime === 90) {
@@ -129,6 +123,17 @@ export const ProfileGenerationScreen: React.FC<ProfileGenerationScreenProps> = (
           you.
         </Text>
       </View>
+
+      {/* Skip Button (shown after 20 seconds) */}
+      {showSkipButton && (
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={onSkip}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.skipButtonText}>Go to Dashboard</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -192,5 +197,23 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  skipButton: {
+    marginTop: 24,
+    backgroundColor: '#6366F1',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  skipButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

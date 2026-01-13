@@ -16,5 +16,4 @@ dotenv.config({ path: envFile });
 admin.initializeApp();
 
 // Export functions
-export { generateOnboardingProfile } from './generateOnboardingProfile';
-export { retryProfileGeneration } from './retryProfileGeneration';
+export { generateProfile } from './generateProfile';

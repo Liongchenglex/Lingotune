@@ -287,6 +287,13 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
 
       const correctAnswers = testQuestions.filter((q) => q.isCorrect).length;
 
+      console.log('='.repeat(80));
+      console.log('TestScreen - About to call completeTest()');
+      console.log('TestScreen - Language:', language);
+      console.log('TestScreen - Total questions:', questions.length);
+      console.log('TestScreen - Completed questions:', finalAnswers.length);
+      console.log('TestScreen - Correct answers:', correctAnswers);
+
       // Create test result
       await completeTest({
         language,
@@ -303,10 +310,14 @@ export const TestScreen: React.FC<TestScreenProps> = ({ language, onComplete }) 
         userId: '', // Set by OnboardingContext
       });
 
+      console.log('TestScreen - completeTest() finished successfully');
+      console.log('='.repeat(80));
+
       // Clear AsyncStorage state
       await clearState();
 
       // Navigate to profile generation screen
+      console.log('TestScreen - Navigating to profile generation screen');
       onComplete();
     } catch (err: any) {
       console.error('Failed to complete test:', err);

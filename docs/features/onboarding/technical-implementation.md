@@ -195,7 +195,7 @@ This document tracks the implementation progress of the onboarding feature. Upda
 
 #### ✅ 8. TestScreen (`src/screens/onboarding/TestScreen.tsx`)
 
-**Completed**: 2026-01-06
+**Completed**: 2026-01-06 | **Updated**: 2026-01-12
 
 **What was implemented**:
 - Question loading from Firestore
@@ -205,7 +205,7 @@ This document tracks the implementation progress of the onboarding feature. Upda
 - Multiple choice question display
 - Answer selection with radio buttons
 - "Next Question" / "Complete Test" button
-- Resume functionality (loads saved state)
+- ~~Resume functionality (loads saved state)~~ **REMOVED** (see below)
 - Test completion and result submission
 - Error handling with retry
 
@@ -225,7 +225,14 @@ This document tracks the implementation progress of the onboarding feature. Upda
 **State Management**:
 - Uses `useTestState` hook for local state + AsyncStorage
 - Calls `saveTestProgress()` for Firestore backup
-- Clears AsyncStorage on test completion
+- **Clears AsyncStorage on test start** (restart from Q1 if user reloads)
+
+**Resume Functionality REMOVED (2026-01-12)**:
+- **Previous behavior**: User could quit at Q5, reopen app, resume from Q5
+- **New behavior**: User quits at Q5, reopens app → **restarts from Q1**
+- **Reason**: Simplified user flow per user request
+- **Implementation**: TestScreen no longer calls `loadSavedState()` on mount
+- **Data**: Previous answers are NOT preserved in AsyncStorage
 
 **Error Handling**:
 - Loading state while fetching questions
@@ -246,32 +253,42 @@ This document tracks the implementation progress of the onboarding feature. Upda
 
 #### ✅ 9. ProfileGenerationScreen (`src/screens/onboarding/ProfileGenerationScreen.tsx`)
 
-**Completed**: 2026-01-06
+**Completed**: 2026-01-06 | **Updated**: 2026-01-12
 
 **What was implemented**:
 - Loading animation with ActivityIndicator and pulse circle
 - "Analyzing your responses..." message with dynamic updates
-- Real-time Firestore listener for profile completion status
+- **Direct Firebase callable function invocation** (replaced Firestore listener)
 - Elapsed time timer (MM:SS format)
 - Messages update based on wait time (30s, 60s, 90s intervals)
 - Navigate to ProfileSummaryScreen when profile ready
 - Error handling for failed profile generation
+- **"Go to Dashboard" button after 20 seconds** if generation is taking too long
+- **Skip functionality** to allow users to go to dashboard and retry later
 
 **Security**:
-- Read-only operations (polling user's own data)
-- Firestore listener validates document existence
+- Authenticated function call (user must be logged in)
+- Function validates test ownership before generating profile
 - Error states trigger onError callback
 
 **State Management**:
-- Uses Firestore onSnapshot for real-time updates
-- Checks profileStatus: 'pending' | 'completed' | 'failed'
-- Passes aiProfile and goals to onComplete callback
+- ~~Uses Firestore onSnapshot for real-time updates~~ **REMOVED**
+- **Directly calls `generateProfileForTest(testId)` function**
+- Passes aiProfile and goals to onComplete callback on success
+- Provides onSkip callback for user to navigate to dashboard early
 
 **UI/UX**:
 - Elapsed time display to manage user expectations
 - Progressive messages to reassure during long waits
 - Clean loading animation with brand colors
 - Informative message about AI analysis process
+- **"Go to Dashboard" button appears after 20 seconds**
+- User can skip waiting and retry from dashboard later
+
+**Key Changes (2026-01-12)**:
+- Replaced passive Firestore listening with active function call
+- Added skip/timeout functionality for better UX
+- Improved error handling with user-friendly messages
 
 ---
 
@@ -331,25 +348,27 @@ interface ProfileSummaryScreenProps {
 
 ---
 
-#### ✅ 12. Firebase Function: generateOnboardingProfile
+#### ✅ 12. Firebase Function: generateProfile (Callable Function)
 
-**Completed**: 2026-01-06
+**Completed**: 2026-01-06 | **Simplified**: 2026-01-12
 
 **What was implemented**:
-- Firestore onCreate trigger for `onboardingTests/{testId}` collection
+- **Callable HTTPS function** (replaced onCreate trigger and scheduled function)
+- **Can be invoked directly from client** after test completion or from "Regenerate Profile" button
 - OpenAI GPT-4o integration for profile generation
 - Anthropic Claude 3.5 Sonnet fallback if GPT fails
 - Detailed AI prompt with test results, category performance, and question analysis
 - JSON response parsing with profile text and goals array
 - Atomic Firestore updates (test document + user profile)
-- Error handling with retry count tracking
+- Error handling with clear user-facing messages
 - Comprehensive logging for debugging
 
 **Security**:
-- API keys stored in Firebase Functions config (not in code)
+- **Requires authentication** (`context.auth` must be present)
+- **Validates test ownership** (userId in test must match authenticated user)
+- API keys stored in environment variables (.env.development/.env.production)
 - Runs with admin privileges (bypasses security rules)
-- Validates userId before updating user profile
-- Marks tests for retry if both AI services fail
+- Prevents cross-user profile generation
 
 **AI Prompt Strategy**:
 - Includes overall accuracy, foundation question performance, time spent
@@ -358,37 +377,45 @@ interface ProfileSummaryScreenProps {
 - Requests 2-3 paragraph profile + 3-5 specific goals
 - Encourages personalized, motivational tone
 
-**File**: `functions/src/generateOnboardingProfile.ts`
+**Key Features**:
+- **Idempotent**: Returns existing profile if already generated
+- **Early return**: If profile already exists, returns immediately without regenerating
+- **Status tracking**: Updates profileStatus to 'pending' → 'completed' or 'failed'
+- **Fallback chain**: OpenAI → Claude → Failure (no infinite retries)
+
+**File**: `functions/src/generateProfile.ts`
+
+**Client Integration**:
+- Client calls via `src/services/profileGeneration.ts` wrapper
+- Used in ProfileGenerationScreen after test completion
+- Used in DashboardScreen for "Regenerate Profile" button
+
+**Why This Replaced Two Functions**:
+- **Old**: `generateOnboardingProfile` (onCreate trigger) + `retryProfileGeneration` (scheduled)
+- **New**: Single callable function invoked on-demand
+- **Benefits**:
+  - Simpler architecture (one function instead of two)
+  - User control (call when needed, not automatic)
+  - Better error handling (immediate feedback vs waiting for background job)
+  - Easier testing and debugging
 
 ---
 
-#### ✅ 13. Firebase Function: retryProfileGeneration
+#### ~~13. Firebase Function: retryProfileGeneration~~ **REMOVED**
 
-**Completed**: 2026-01-06
+**Status**: **DEPRECATED** (2026-01-12)
 
-**What was implemented**:
-- Pub/Sub scheduled function (runs every 5 minutes)
-- Query for pending tests older than 5 minutes
-- Batch processing (max 10 tests per run to avoid timeout)
-- Retry logic with OpenAI → Claude fallback
-- Max retry limit (5 attempts) before marking as failed
-- Retry count tracking in test documents
-- Summary logging (success, failed, max retries, errors)
+**Reason for Removal**:
+- Replaced by single callable `generateProfile` function
+- Scheduled retry logic no longer needed (user can manually retry)
+- Simpler architecture with on-demand callable function
 
-**Configuration Required** (deployment):
-```bash
-# Cloud Scheduler must be set up separately or use built-in scheduler
-firebase functions:config:set openai.key="sk-..." --project PROJECT_ID
-firebase functions:config:set anthropic.key="sk-ant-..." --project PROJECT_ID
-```
+**Migration**:
+- All profile generation now handled by `generateProfile` callable function
+- Users can retry from "Regenerate Profile" button on dashboard
+- No background job complexity
 
-**Error Handling**:
-- Increments retryCount on each failure
-- Marks as 'failed' after 5 attempts
-- Logs all retry attempts for monitoring
-- Returns summary object for observability
-
-**File**: `functions/src/retryProfileGeneration.ts`
+**Old File**: ~~`functions/src/retryProfileGeneration.ts`~~ (deleted)
 
 ---
 
@@ -629,11 +656,13 @@ scripts/
 functions/
 ├── src/
 │   ├── index.ts ✅
-│   ├── generateOnboardingProfile.ts ✅
-│   └── retryProfileGeneration.ts ✅
+│   └── generateProfile.ts ✅ (replaced generateOnboardingProfile + retryProfileGeneration)
 ├── package.json ✅
-├── tsconfig.json ✅
+├── tsconfig.json ✅ (updated: removed expo extension, added moduleResolution)
 └── .gitignore ✅
+
+services/
+└── profileGeneration.ts ✅ (NEW: client wrapper for calling generateProfile function)
 
 docs/features/onboarding/
 ├── requirements.md ✅
@@ -807,7 +836,178 @@ Welcome → Language Selection → Test Confirmation → Test → Profile Genera
 
 ---
 
-## Section 18: Dashboard-First Navigation with Resume Banner
+## Section 18: Regenerate Profile Functionality
+
+**Date**: 2026-01-12
+**Status**: ✅ COMPLETE
+
+### Problem
+When AI profile generation fails (both OpenAI and Claude fail), users need a way to retry profile generation without restarting the entire test. The previous implementation used a scheduled background job (`retryProfileGeneration`) which had limitations:
+- No user visibility into retry status
+- No control over when retry happens
+- Complex scheduled function logic
+- Users couldn't manually trigger retry
+
+### Solution
+Implemented "Regenerate Profile" button on DashboardScreen that directly calls the `generateProfile` callable function.
+
+**User Flow:**
+1. User completes test, but AI generation fails (or takes too long)
+2. User clicks "Go to Dashboard" on ProfileGenerationScreen
+3. Dashboard shows language card with status badge:
+   - **"Profile Pending"** (orange) if `profileStatus === 'pending'`
+   - **"Generation Failed"** (red) if `profileStatus === 'failed'`
+4. User taps "Regenerate Profile" button on language card
+5. Function is called directly with existing testId
+6. Success → Profile appears on dashboard
+7. Failure → User sees error, can retry again
+
+**Benefits:**
+- **User control**: Manual retry instead of waiting for background job
+- **Immediate feedback**: User sees success/failure immediately
+- **Simpler architecture**: No scheduled function needed
+- **Better UX**: Clear status badges and actionable button
+
+### Implementation
+
+**Files Changed:**
+1. `src/screens/DashboardScreen.tsx`
+2. `src/services/profileGeneration.ts` (used by both ProfileGenerationScreen and DashboardScreen)
+3. `functions/src/generateProfile.ts` (idempotent, can be called multiple times)
+
+#### DashboardScreen Changes
+
+**State Management:**
+```typescript
+const [profileStatuses, setProfileStatuses] = useState<Record<string, string>>({});
+
+// Load profile statuses from Firestore
+useEffect(() => {
+  const loadProfileStatuses = async () => {
+    const statuses: Record<string, string> = {};
+    for (const language of userProfile.languages) {
+      const testId = language.testHistory[language.testHistory.length - 1];
+      if (testId) {
+        const testDoc = await getDoc(doc(db, 'onboardingTests', testId));
+        if (testDoc.exists()) {
+          statuses[language.languageCode] = testDoc.data().profileStatus;
+        }
+      }
+    }
+    setProfileStatuses(statuses);
+  };
+  loadProfileStatuses();
+}, [userProfile]);
+```
+
+**Regenerate Handler:**
+```typescript
+const handleRegenerateProfile = async (languageCode: string, testId: string) => {
+  try {
+    Alert.alert('Generating Profile', 'Please wait while we generate your profile...');
+
+    const result = await generateProfileForTest(testId);
+
+    if (result.success && result.profile) {
+      // Update local state
+      const statuses = { ...profileStatuses };
+      statuses[languageCode] = 'completed';
+      setProfileStatuses(statuses);
+
+      Alert.alert('Success!', 'Your profile has been generated successfully.');
+    }
+  } catch (error: any) {
+    Alert.alert('Error', 'Failed to generate profile. Please try again later.');
+  }
+};
+```
+
+**UI Rendering:**
+```tsx
+{/* Status badge */}
+{status === 'pending' && (
+  <View style={styles.statusBadge}>
+    <Text style={styles.statusBadgeText}>⏳ Profile Pending</Text>
+  </View>
+)}
+{status === 'failed' && (
+  <View style={[styles.statusBadge, styles.statusBadgeFailed]}>
+    <Text style={styles.statusBadgeText}>❌ Generation Failed</Text>
+  </View>
+)}
+
+{/* Regenerate button */}
+{(status === 'pending' || status === 'failed') && (
+  <TouchableOpacity
+    style={styles.regenerateButton}
+    onPress={() => handleRegenerateProfile(language.languageCode, testId)}
+  >
+    <Text style={styles.regenerateButtonText}>🔄 Regenerate Profile</Text>
+  </TouchableOpacity>
+)}
+```
+
+**Styling:**
+- Orange badge for "Profile Pending" (#FEF3C7 background, #F59E0B border)
+- Red badge for "Generation Failed" (#FEE2E2 background, #EF4444 border)
+- Blue regenerate button (#3B82F6)
+- Clear visual hierarchy
+
+### Edge Cases Handled
+
+**1. Profile Already Exists**
+- **Scenario**: User taps "Regenerate Profile" but profile was generated in background
+- **Behavior**: Function returns existing profile immediately (idempotent)
+- **Implementation**: `generateProfile.ts` checks `profileStatus === 'completed' && aiProfile` at start
+
+**2. Multiple Rapid Taps**
+- **Scenario**: User taps "Regenerate Profile" button multiple times rapidly
+- **Behavior**: Alert shows "Generating Profile..." (modal), prevents duplicate calls
+- **Implementation**: Alert blocks UI until function completes
+
+**3. Network Failure During Regenerate**
+- **Scenario**: User taps regenerate, but loses connection
+- **Behavior**: Error alert shown, user can retry when online
+- **Implementation**: try/catch in handleRegenerateProfile with user-friendly error
+
+**4. Both AI Services Fail Again**
+- **Scenario**: User regenerates, but both OpenAI and Claude fail again
+- **Behavior**: Status remains 'failed', user can retry later
+- **Implementation**: Function updates status to 'failed', error returned to client
+
+**5. User Has Multiple Languages with Different Statuses**
+- **Scenario**: Korean profile completed, Chinese profile failed
+- **Behavior**: Each language card shows independent status badge
+- **Implementation**: `profileStatuses` state is a map keyed by languageCode
+
+### Testing
+
+**Test Cases:**
+1. ✅ Profile generation fails → Dashboard shows "Profile Pending" badge
+2. ✅ User taps "Regenerate Profile" → Function called with correct testId
+3. ✅ Regenerate succeeds → Badge removed, profile displayed
+4. ✅ Regenerate fails → Badge changes to "Generation Failed"
+5. ✅ User has completed language + pending language → Each shows correct status
+6. ✅ Multiple rapid taps → Only one function call (alert blocks UI)
+7. ✅ Profile already exists → Function returns immediately without regenerating
+
+**Console Logging:**
+```typescript
+console.log('handleRegenerateProfile - languageCode:', languageCode);
+console.log('handleRegenerateProfile - testId:', testId);
+console.log('handleRegenerateProfile - result:', result);
+```
+
+### Future Considerations
+
+1. **Progress Indicator**: Show loading spinner instead of alert modal
+2. **Retry Count**: Track number of regenerate attempts, warn after 3+ failures
+3. **Auto-Retry**: Offer to auto-retry every X minutes (opt-in)
+4. **Partial Profile**: If AI returns partial response, show what's available
+
+---
+
+## Section 19: Dashboard-First Navigation with Resume Banner
 
 **Date**: 2026-01-07
 **Status**: ✅ COMPLETE

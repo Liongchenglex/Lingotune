@@ -10,25 +10,125 @@
  * Security: User must be authenticated to access
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../contexts/OnboardingContext';
+import { generateProfileForTest } from '../services/profileGeneration';
+import type { OnboardingTest } from '../types/onboarding';
 
 interface DashboardScreenProps {
   onResumeOnboarding?: () => void; // Callback to resume incomplete onboarding
   onAddLanguage?: () => void; // Callback to navigate to language selection
 }
 
-export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onResumeOnboarding, onAddLanguage }) => {
+export const DashboardScreen: React.FC<DashboardScreenProps> = ({
+  onResumeOnboarding,
+  onAddLanguage
+}) => {
   const { user, signOut } = useAuth();
-  const { userProfile, checkOnboardingStatus } = useOnboarding();
+  const { userProfile } = useOnboarding();
+  const [profileStatuses, setProfileStatuses] = useState<Record<string, 'pending' | 'completed' | 'failed' | 'loading'>>({});
 
-  const isOnboardingComplete = checkOnboardingStatus();
+  // Track completion at LANGUAGE LEVEL (not user.onboardingCompleted)
+  const hasCompletedLanguage = userProfile?.languages.some(lang => lang.onboardingStatus === 'completed');
   const hasInProgressOnboarding = !!onResumeOnboarding; // If callback provided, there's incomplete onboarding
   const activeLanguages = userProfile?.languages.filter(
     (lang) => lang.onboardingStatus === 'completed'
   );
+
+  // Create stable dependency key for useEffect
+  // Only depends on userProfile (single reference), not the array
+  const languageKey = useMemo(() => {
+    if (!userProfile?.languages) return '';
+    return userProfile.languages
+      .map((l) => `${l.languageCode}-${l.onboardingStatus}-${l.testHistory[l.testHistory.length - 1] || 'none'}`)
+      .join('|');
+  }, [userProfile]);
+
+  /**
+   * Check profile status for each completed language
+   */
+  useEffect(() => {
+    const checkProfileStatuses = async () => {
+      if (!userProfile?.languages || userProfile.languages.length === 0) return;
+
+      const completedLanguages = userProfile.languages.filter(
+        (lang) => lang.onboardingStatus === 'completed'
+      );
+
+      if (completedLanguages.length === 0) return;
+
+      const statuses: Record<string, 'pending' | 'completed' | 'failed' | 'loading'> = {};
+
+      for (const language of completedLanguages) {
+        const mostRecentTestId = language.testHistory[language.testHistory.length - 1];
+
+        if (!mostRecentTestId) {
+          statuses[language.languageCode] = 'pending';
+          continue;
+        }
+
+        try {
+          const testDoc = await getDoc(doc(db, 'onboardingTests', mostRecentTestId));
+          if (testDoc.exists()) {
+            const testData = testDoc.data() as OnboardingTest;
+            statuses[language.languageCode] = testData.profileStatus;
+          } else {
+            statuses[language.languageCode] = 'pending';
+          }
+        } catch (error) {
+          console.error(`Failed to fetch profile status for ${language.languageCode}:`, error);
+          statuses[language.languageCode] = 'pending';
+        }
+      }
+
+      console.log('DashboardScreen - Profile statuses fetched:', statuses);
+      setProfileStatuses(statuses);
+    };
+
+    checkProfileStatuses();
+  }, [languageKey]);
+
+  /**
+   * Handle profile regeneration
+   */
+  const handleRegenerateProfile = async (languageCode: string, testId: string) => {
+    console.log('DashboardScreen - handleRegenerateProfile called:', { languageCode, testId });
+
+    try {
+      // Show loading state
+      Alert.alert('Generating Profile', 'Please wait while we generate your profile...');
+
+      const result = await generateProfileForTest(testId);
+
+      if (result.success && result.profile) {
+        console.log('DashboardScreen - Profile regenerated successfully');
+
+        // Refresh profile statuses to reflect the new 'completed' status
+        const statuses = { ...profileStatuses };
+        statuses[languageCode] = 'completed';
+        setProfileStatuses(statuses);
+
+        Alert.alert(
+          'Success!',
+          'Your profile has been generated successfully.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        throw new Error('Invalid response from profile generation');
+      }
+    } catch (error: any) {
+      console.error('DashboardScreen - Failed to regenerate profile:', error);
+      Alert.alert(
+        'Error',
+        'Failed to generate profile. Please try again later.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
 
   /**
    * Handle logout
@@ -75,7 +175,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onResumeOnboar
       )}
 
       {/* Onboarding Status Card */}
-      {isOnboardingComplete && (
+      {hasCompletedLanguage && (
         <View style={styles.statusCard}>
           <Text style={styles.statusIcon}>✅</Text>
           <View style={styles.statusContent}>
@@ -140,12 +240,42 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ onResumeOnboar
 
               {/* Action Button */}
               <TouchableOpacity
-                style={[styles.startButton, hasInProgressOnboarding && styles.startButtonDisabled]}
+                style={[
+                  styles.startButton,
+                  hasInProgressOnboarding && styles.startButtonDisabled,
+                  (profileStatuses[language.languageCode] === 'pending' || profileStatuses[language.languageCode] === 'failed') && styles.regenerateButton
+                ]}
                 activeOpacity={0.7}
                 disabled={hasInProgressOnboarding}
+                onPress={() => {
+                  console.log('='.repeat(80));
+                  console.log('DashboardScreen - Button pressed for language:', language.languageCode);
+                  const status = profileStatuses[language.languageCode];
+                  console.log('DashboardScreen - Profile status:', status);
+
+                  if (status === 'pending' || status === 'failed') {
+                    const testId = language.testHistory[language.testHistory.length - 1];
+                    console.log('DashboardScreen - Test ID:', testId);
+                    if (testId) {
+                      console.log('DashboardScreen - Calling handleRegenerateProfile');
+                      handleRegenerateProfile(language.languageCode, testId);
+                    } else {
+                      console.error('DashboardScreen - No test ID found!');
+                      Alert.alert('Error', 'No test found for this language.');
+                    }
+                  } else {
+                    // TODO: Handle "Start Learning" action for completed profiles
+                    console.log('DashboardScreen - Start Learning pressed (not yet implemented)');
+                  }
+                  console.log('='.repeat(80));
+                }}
               >
                 <Text style={styles.startButtonText}>
-                  {hasInProgressOnboarding ? 'Complete Onboarding First' : 'Start Learning'}
+                  {hasInProgressOnboarding
+                    ? 'Complete Onboarding First'
+                    : profileStatuses[language.languageCode] === 'pending' || profileStatuses[language.languageCode] === 'failed'
+                    ? '🔄 Regenerate Profile'
+                    : 'Start Learning'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -394,6 +524,9 @@ const styles = StyleSheet.create({
   },
   startButtonDisabled: {
     backgroundColor: '#D1D5DB',
+  },
+  regenerateButton: {
+    backgroundColor: '#F59E0B', // Orange color for regenerate action
   },
   startButtonText: {
     color: '#FFFFFF',

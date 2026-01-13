@@ -52,13 +52,18 @@ User adds a new language and completes onboarding for that language.
 System adapts question difficulty based on foundation question performance.
 
 ### 2.4 Resume Incomplete Onboarding
-User quits mid-onboarding and resumes from last screen.
+~~User quits mid-onboarding and resumes from last screen.~~ **DEPRECATED** (2026-01-12)
+
+**Updated Behavior**: User quits mid-onboarding → **restarts test from Question 1** on next open.
 
 ### 2.5 AI Profile Generation
-System sends test data to AI and generates personalized diagnosis.
+System sends test data to AI and generates personalized diagnosis via callable Firebase Function.
 
 ### 2.6 Dashboard Access Control
-System blocks/unblocks dashboard based on onboarding completion status.
+System shows dashboard with features disabled until onboarding completion (non-blocking banner approach).
+
+### 2.7 Profile Regeneration (NEW - 2026-01-12)
+User can manually retry profile generation from dashboard if initial generation fails or takes too long.
 
 ---
 
@@ -91,15 +96,18 @@ System blocks/unblocks dashboard based on onboarding completion status.
     - User completes all 15 questions, OR
     - User fails 3 foundation questions (early termination)
 15. App navigates to AI Profile Generation Loading Screen
-16. System sends test data to OpenAI GPT API:
+16. **System immediately calls `generateProfile` Firebase Function** with testId:
+    - Function fetches test data from Firestore
+    - Function sends data to OpenAI GPT API
     - All questions asked (text, type, correct answer)
     - User's answers
     - Time taken per question
     - Early termination flag (if applicable)
 17. OpenAI GPT generates essay-style diagnosis (500-800 words)
-18. If GPT fails, system retries with Claude API
-19. If both fail, system queues retry in background
-20. App displays AI Profile Summary Screen
+18. If GPT fails, function retries with Claude API
+19. If both fail, function returns error → user sees option to retry from dashboard
+20. **After 20 seconds, "Go to Dashboard" button appears** (allows user to skip waiting)
+21. App displays AI Profile Summary Screen
 21. User reads profile and goals
 22. User taps "Start Learning"
 23. System updates user profile:
@@ -183,11 +191,14 @@ System blocks/unblocks dashboard based on onboarding completion status.
 
 ### AI Profile Generation Screen
 
+**Updated**: 2026-01-12
+
 **Loading State:**
 - Show animated loading indicator
 - Display message: "Analyzing your responses..."
 - Display sub-message: "This may take 20-30 seconds"
-- No skip/cancel option (blocking operation)
+- **"Go to Dashboard" button appears after 20 seconds** (allows skip)
+- **User can skip waiting and retry from dashboard later**
 
 **AI Request Payload:**
 ```javascript
@@ -228,15 +239,16 @@ Test Data:
 Write in an encouraging, specific, and actionable tone. Avoid generic statements. Focus on observable patterns in their responses.
 ```
 
-**AI Response Handling:**
+**AI Response Handling** (Updated 2026-01-12):
 - **Success (GPT)**: Parse response, save to Firestore, display to user
-- **Failure (GPT)**: Retry once, then fallback to Claude with same prompt
+- **Failure (GPT)**: Retry once with Claude API
 - **Success (Claude)**: Parse response, save to Firestore, display to user
 - **Failure (Both)**:
-  - Save test data to Firestore with `profileStatus: 'pending'`
-  - Queue background retry job
-  - Show user: "We're still analyzing your results. You can start learning, and your profile will appear soon."
-  - Allow dashboard access
+  - Function returns error with `profileStatus: 'failed'`
+  - ~~Queue background retry job~~ **REMOVED**
+  - Show user: "Having trouble generating your profile. You can skip to dashboard and retry later."
+  - **"Go to Dashboard" button allows user to skip**
+  - **User can retry from dashboard using "Regenerate Profile" button**
 
 **Profile Display:**
 - Show AI-generated essay in readable format
@@ -367,6 +379,66 @@ Dashboard → User: Show unlocked dashboard
 
 ---
 
+# FLOW 2: Profile Regeneration (NEW - 2026-01-12)
+
+## Step-by-Step Behaviour
+
+### Dashboard with Failed/Pending Profile
+
+**Scenario**: User completed test, but AI profile generation failed or took too long.
+
+**Visual Indicators:**
+1. Language card shows status badge:
+   - **"⏳ Profile Pending"** (orange) if `profileStatus === 'pending'`
+   - **"❌ Generation Failed"** (red) if `profileStatus === 'failed'`
+2. **"🔄 Regenerate Profile" button** appears below language card
+3. Dashboard content is visible but learning features are enabled (profile is optional)
+
+**User Actions:**
+1. User taps "🔄 Regenerate Profile" button
+2. Alert modal shows: "Generating Profile - Please wait while we generate your profile..."
+3. System calls `generateProfile` Firebase Function with testId
+4. Function attempts OpenAI → Claude fallback chain
+5. **Success**: Alert shows "Success! Your profile has been generated successfully."
+   - Status badge disappears
+   - Profile text appears on language card
+   - Goals are displayed
+6. **Failure**: Alert shows "Error - Failed to generate profile. Please try again later."
+   - Status badge remains (shows "Generation Failed")
+   - User can retry again
+
+**Technical Implementation:**
+```typescript
+const handleRegenerateProfile = async (languageCode: string, testId: string) => {
+  try {
+    Alert.alert('Generating Profile', 'Please wait...');
+    const result = await generateProfileForTest(testId);
+
+    if (result.success && result.profile) {
+      Alert.alert('Success!', 'Your profile has been generated successfully.');
+      // Update local state to remove badge
+      setProfileStatuses({ ...profileStatuses, [languageCode]: 'completed' });
+    }
+  } catch (error) {
+    Alert.alert('Error', 'Failed to generate profile. Please try again later.');
+  }
+};
+```
+
+**Edge Cases:**
+- **Multiple rapid taps**: Alert modal blocks UI, prevents duplicate calls
+- **Profile already exists**: Function returns immediately (idempotent)
+- **Network failure**: Error shown, user can retry when online
+- **Both AI services fail again**: Status remains 'failed', user can retry unlimited times
+
+**Benefits Over Previous Approach:**
+- **User control**: Manual retry instead of waiting for background job
+- **Immediate feedback**: User sees success/failure immediately (not 5-minute intervals)
+- **Simpler architecture**: No scheduled function, no retry count tracking
+- **Better UX**: Clear status indicators and actionable button
+
+---
+
 ## 6. Visual Flow
 
 ```
@@ -419,7 +491,7 @@ Dashboard → User: Show unlocked dashboard
   (beginner-focused diagnosis)
 ```
 
-**Resume Path:**
+**Resume Path** (Updated 2026-01-12):
 ```
 [User quits at Question 5]
         ↓
@@ -434,8 +506,35 @@ Dashboard → User: Show unlocked dashboard
         ↓
 [User taps banner]
         ↓
-[Test Screen - Question 5]
-  (timer reset, previous answers saved)
+[Test Screen - Question 1] ← CHANGED: Restarts from Q1 (not Q5)
+  (timer reset, previous answers NOT saved)
+```
+
+**Profile Regeneration Path** (NEW - 2026-01-12):
+```
+[Profile Generation Failed]
+        ↓
+[User clicks "Go to Dashboard"]
+        ↓
+[Dashboard]
+  - Language card shows "❌ Generation Failed" badge
+  - "🔄 Regenerate Profile" button visible
+        ↓
+[User taps "Regenerate Profile"]
+        ↓
+[Alert: "Generating Profile..."]
+        ↓
+[Function called with testId]
+        ↓
+[Success]
+  - Badge disappears
+  - Profile displayed
+  - Alert: "Success!"
+        ↓
+[Or Failure]
+  - Badge remains "Generation Failed"
+  - Alert: "Error - Failed to generate profile"
+  - User can retry again
 ```
 
 ---
@@ -761,24 +860,27 @@ Format as markdown. Be specific and reference actual test performance.`
   - On resume: Show Language Selection with previous selection pre-filled
 - **Data**: Selected language saved in `languages` array with `onboardingStatus: 'in_progress'`
 
-### 3. User Quits During Test (Mid-Question)
+### 3. User Quits During Test (Mid-Question) - UPDATED 2026-01-12
 - **Scenario**: User closes app at Question 5 (timer at 23 seconds)
 - **Behavior**:
-  - Save `currentScreen: 'test'`, `currentQuestionIndex: 4` (0-indexed)
-  - Save `tempAnswers` array with questions 1-4
-  - On resume: Load Question 5 again, timer reset to 0
-  - Previous answers (1-4) preserved and not re-asked
-- **Data**: Partial test data in `tempAnswers`
+  - Save `currentScreen: 'test'` to Firestore
+  - ~~Save `tempAnswers` array with questions 1-4~~ **REMOVED**
+  - On resume: **Restart from Question 1** (not Question 5)
+  - ~~Previous answers (1-4) preserved and not re-asked~~ **REMOVED**
+  - **User must restart test from beginning**
+- **Data**: ~~Partial test data in `tempAnswers`~~ **No partial data saved**
 
-### 4. User Quits During AI Profile Generation
+### 4. User Quits During AI Profile Generation - UPDATED 2026-01-12
 - **Scenario**: User force-closes app while "Analyzing responses..." screen is showing
 - **Behavior**:
   - Test data already saved to Firestore with `profileStatus: 'pending'`
-  - Background job continues processing
-  - On resume: Check if profile completed
-    - If yes: Show Profile Summary Screen
-    - If no: Show loading screen again, continue waiting
-    - If failed: Show error and retry button
+  - ~~Background job continues processing~~ **REMOVED**
+  - **Function may still be running in Firebase (up to 60s timeout)**
+  - On resume: User lands on Dashboard
+    - If profile completed: Dashboard shows profile (no badge)
+    - If profile still pending: Dashboard shows "⏳ Profile Pending" badge with "🔄 Regenerate Profile" button
+    - If profile failed: Dashboard shows "❌ Generation Failed" badge with "🔄 Regenerate Profile" button
+  - **User can manually retry from dashboard**
 
 ### 5. Early Termination (3 Foundation Failures)
 - **Scenario**: User answers foundation questions 1, 2, 3 incorrectly
@@ -799,15 +901,16 @@ Format as markdown. Be specific and reference actual test performance.`
     - If offline: Show "No connection" error, save progress, allow retry
 - **Data**: Answers saved locally, synced when online
 
-### 7. Both AI APIs Fail
+### 7. Both AI APIs Fail - UPDATED 2026-01-12
 - **Scenario**: OpenAI returns 500 error, Claude returns 429 (rate limit)
 - **Behavior**:
-  - Save test data with `profileStatus: 'pending'`
-  - Queue background retry (retry every 5 minutes, max 5 attempts)
-  - Show user: "We're still analyzing your results. Check back soon!"
-  - Allow dashboard access (partial unlock)
-  - Show "Profile pending" badge on language card
-- **Data**: Test saved, profile null, status pending
+  - Function updates test data with `profileStatus: 'failed'`
+  - ~~Queue background retry (retry every 5 minutes, max 5 attempts)~~ **REMOVED**
+  - Show user: "Having trouble generating your profile. You can skip to dashboard and retry later."
+  - **"Go to Dashboard" button appears**
+  - Dashboard shows "❌ Generation Failed" badge
+  - **User can manually retry unlimited times via "🔄 Regenerate Profile" button**
+- **Data**: Test saved, profile null, status failed
 
 ### 8. User Has Existing Language, Adds New One
 - **Scenario**: User completed Korean onboarding, now adds Chinese
@@ -848,15 +951,43 @@ Format as markdown. Be specific and reference actual test performance.`
     ```
 - **Data**: Save generic profile with `profileGeneratedBy: 'fallback_template'`
 
-### 12. User Deletes App Mid-Onboarding
+### 12. User Deletes App Mid-Onboarding - UPDATED 2026-01-12
 - **Scenario**: User uninstalls app, reinstalls later
 - **Behavior**:
   - AsyncStorage cleared (local temp data lost)
   - Firestore data persists (user account, partial test data)
   - On login: Check `onboardingCompleted` flag
-  - If `in_progress`: Resume from last saved screen
-  - If `tempAnswers` exist: Use them, don't re-ask
+  - If `in_progress`: Dashboard shows resume banner
+  - ~~If `tempAnswers` exist: Use them, don't re-ask~~ **REMOVED** - User restarts test from Q1
 - **Data**: Firestore data persists, AsyncStorage data lost
+
+### 13. User Taps Regenerate Profile But Profile Already Exists (NEW - 2026-01-12)
+- **Scenario**: User sees "Profile Pending" badge, taps regenerate, but profile was completed in background
+- **Behavior**:
+  - Function checks if `profileStatus === 'completed' && aiProfile` exists
+  - If yes: Return existing profile immediately (idempotent)
+  - Alert shows "Success!" even though no regeneration occurred
+  - Badge disappears from dashboard
+- **Data**: No new profile generated, existing profile returned
+
+### 14. User Taps Regenerate Multiple Times Rapidly (NEW - 2026-01-12)
+- **Scenario**: User taps "🔄 Regenerate Profile" button 5 times in 1 second
+- **Behavior**:
+  - First tap: Alert modal shows "Generating Profile..." (blocks UI)
+  - Subsequent taps: Ignored (alert modal blocks interaction)
+  - Only one function call is made
+  - After function completes: Alert updates with success/error
+- **Data**: Single function invocation
+
+### 15. User Regenerates But Both AI Services Fail Again (NEW - 2026-01-12)
+- **Scenario**: User taps regenerate, OpenAI fails, Claude fails
+- **Behavior**:
+  - Function updates `profileStatus: 'failed'`
+  - Function returns error to client
+  - Alert shows: "Error - Failed to generate profile. Please try again later."
+  - Badge remains "❌ Generation Failed"
+  - User can retry again (unlimited attempts)
+- **Data**: profileStatus remains 'failed', no retry count tracking
 
 ---
 

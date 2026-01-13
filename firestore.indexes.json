@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "onboardingTests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "profileStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
