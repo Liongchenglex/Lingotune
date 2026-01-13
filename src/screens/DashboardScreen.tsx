@@ -23,12 +23,16 @@ interface DashboardScreenProps {
   onResumeOnboarding?: () => void; // Callback to resume incomplete onboarding
   onAddLanguage?: () => void; // Callback to navigate to language selection
   onViewProfile?: (language: UserLanguage) => void; // Callback to view language profile
+  onChooseSong?: (language: UserLanguage) => void; // Callback to navigate to song selection
+  onViewLyrics?: (language: UserLanguage) => void; // Callback to view lyrics screen
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onResumeOnboarding,
   onAddLanguage,
-  onViewProfile
+  onViewProfile,
+  onChooseSong,
+  onViewLyrics
 }) => {
   const { user, signOut } = useAuth();
   const { userProfile, refreshUserProfile } = useOnboarding();
@@ -405,10 +409,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                       style={styles.chooseSongButton}
                       activeOpacity={0.7}
                       onPress={() => {
-                        Alert.alert(
-                          'Coming Soon',
-                          'Song selection feature will be available soon!'
-                        );
+                        if (onChooseSong) {
+                          onChooseSong(language);
+                        } else {
+                          Alert.alert('Coming Soon', 'Song selection feature will be available soon!');
+                        }
                       }}
                     >
                       <Text style={styles.chooseSongButtonText}>+ Choose Song</Text>
@@ -419,21 +424,33 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 {/* Active State - Song selected */}
                 {language.currentSong && (
                   <View style={styles.musicActiveState}>
-                    <View style={styles.currentSongInfo}>
+                    <TouchableOpacity
+                      style={styles.currentSongInfo}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (onViewLyrics) {
+                          onViewLyrics(language);
+                        } else {
+                          Alert.alert('Coming Soon', 'Lyrics view will be available soon!');
+                        }
+                      }}
+                    >
                       <Text style={styles.currentSongIcon}>🎵</Text>
                       <View style={styles.currentSongText}>
                         <Text style={styles.currentSongTitle}>{language.currentSong.title}</Text>
                         <Text style={styles.currentSongArtist}>{language.currentSong.artist}</Text>
+                        <Text style={styles.tapToViewLyrics}>Tap to view lyrics</Text>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.chooseSongButton}
                       activeOpacity={0.7}
                       onPress={() => {
-                        Alert.alert(
-                          'Coming Soon',
-                          'Song selection feature will be available soon!'
-                        );
+                        if (onChooseSong) {
+                          onChooseSong(language);
+                        } else {
+                          Alert.alert('Coming Soon', 'Song selection feature will be available soon!');
+                        }
                       }}
                     >
                       <Text style={styles.chooseSongButtonText}>+ Choose Another Song</Text>
@@ -796,6 +813,12 @@ const styles = StyleSheet.create({
   currentSongArtist: {
     fontSize: 13,
     color: '#6B7280',
+  },
+  tapToViewLyrics: {
+    fontSize: 12,
+    color: '#6366F1',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   chooseSongButton: {
     backgroundColor: '#EEF2FF',

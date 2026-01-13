@@ -20,6 +20,8 @@ import { TestConfirmationScreen } from '../screens/onboarding/TestConfirmationSc
 import { TestScreen } from '../screens/onboarding/TestScreen';
 import { ProfileGenerationScreen } from '../screens/onboarding/ProfileGenerationScreen';
 import { ProfileSummaryScreen } from '../screens/onboarding/ProfileSummaryScreen';
+import { SongSelectionScreen } from '../screens/music/SongSelectionScreen';
+import { LyricsScreen } from '../screens/music/LyricsScreen';
 import type { OnboardingScreen, LanguageCode, UserLanguage } from '../types/onboarding';
 
 export default function MainNavigator() {
@@ -28,6 +30,9 @@ export default function MainNavigator() {
   const [showingOnboarding, setShowingOnboarding] = useState(false);
   const [showingProfile, setShowingProfile] = useState(false);
   const [viewingLanguage, setViewingLanguage] = useState<UserLanguage | null>(null);
+  const [showingSongSelection, setShowingSongSelection] = useState(false);
+  const [showingLyrics, setShowingLyrics] = useState(false);
+  const [musicLanguage, setMusicLanguage] = useState<UserLanguage | null>(null);
   const [currentScreen, setCurrentScreen] = useState<OnboardingScreen>('welcome');
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
@@ -81,6 +86,37 @@ export default function MainNavigator() {
     }} />;
   }
 
+  // LYRICS VIEW: User is viewing song lyrics
+  if (showingLyrics && musicLanguage) {
+    console.log('MainNavigator - Showing Lyrics View');
+    return (
+      <LyricsScreen
+        onBack={() => {
+          setShowingLyrics(false);
+          setMusicLanguage(null);
+        }}
+      />
+    );
+  }
+
+  // SONG SELECTION: User is choosing a song
+  if (showingSongSelection && musicLanguage) {
+    console.log('MainNavigator - Showing Song Selection');
+    return (
+      <SongSelectionScreen
+        onBack={() => {
+          setShowingSongSelection(false);
+          setMusicLanguage(null);
+        }}
+        onSongSelected={() => {
+          // Song was successfully selected, go back to dashboard
+          setShowingSongSelection(false);
+          setMusicLanguage(null);
+        }}
+      />
+    );
+  }
+
   // PROFILE VIEW: User is viewing a specific language profile
   if (showingProfile && viewingLanguage) {
     console.log('MainNavigator - Showing Profile View');
@@ -112,6 +148,14 @@ export default function MainNavigator() {
         onViewProfile={(language) => {
           setViewingLanguage(language);
           setShowingProfile(true);
+        }}
+        onChooseSong={(language) => {
+          setMusicLanguage(language);
+          setShowingSongSelection(true);
+        }}
+        onViewLyrics={(language) => {
+          setMusicLanguage(language);
+          setShowingLyrics(true);
         }}
       />
     );
