@@ -312,62 +312,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </View>
               )}
 
-              {/* Music Selection Section (only shown when profile exists) */}
-              {language.currentProfile && (
-                <View style={styles.musicSection}>
-                  <Text style={styles.musicSectionTitle}>🎵 Learn with Music</Text>
-
-                  {/* Empty State - No song selected */}
-                  {!language.currentSong && (
-                    <View style={styles.musicEmptyState}>
-                      <Text style={styles.musicEmptyText}>
-                        Choose a song in {language.languageCode === 'ko' && 'Korean'}
-                        {language.languageCode === 'zh' && 'Chinese'}
-                        {language.languageCode === 'ja' && 'Japanese'}
-                        {language.languageCode === 'es' && 'Spanish'} to start learning vocabulary
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.chooseSongButton}
-                        activeOpacity={0.7}
-                        onPress={() => {
-                          Alert.alert(
-                            'Coming Soon',
-                            'Song selection feature will be available soon!'
-                          );
-                        }}
-                      >
-                        <Text style={styles.chooseSongButtonText}>+ Choose Song</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {/* Active State - Song selected */}
-                  {language.currentSong && (
-                    <View style={styles.musicActiveState}>
-                      <View style={styles.currentSongInfo}>
-                        <Text style={styles.currentSongIcon}>🎵</Text>
-                        <View style={styles.currentSongText}>
-                          <Text style={styles.currentSongTitle}>{language.currentSong.title}</Text>
-                          <Text style={styles.currentSongArtist}>{language.currentSong.artist}</Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.chooseSongButton}
-                        activeOpacity={0.7}
-                        onPress={() => {
-                          Alert.alert(
-                            'Coming Soon',
-                            'Song selection feature will be available soon!'
-                          );
-                        }}
-                      >
-                        <Text style={styles.chooseSongButtonText}>+ Choose Another Song</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              )}
-
               {/* Action Button */}
               <TouchableOpacity
                 style={[
@@ -426,19 +370,84 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
       )}
 
+      {/* Learn Through Music Section */}
+      {hasCompletedLanguage && activeLanguages && activeLanguages.some(lang => lang.currentProfile) && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🎵 Learn Through Music</Text>
+
+          {activeLanguages
+            .filter(lang => lang.currentProfile)
+            .map((language) => (
+              <View key={`music-${language.languageCode}`} style={styles.musicCard}>
+                {/* Language Header */}
+                <View style={styles.musicCardHeader}>
+                  <Text style={styles.musicLanguageFlag}>
+                    {language.languageCode === 'ko' && '🇰🇷'}
+                    {language.languageCode === 'zh' && '🇨🇳'}
+                    {language.languageCode === 'ja' && '🇯🇵'}
+                    {language.languageCode === 'es' && '🇪🇸'}
+                  </Text>
+                  <Text style={styles.musicLanguageName}>
+                    {language.languageCode === 'ko' && 'Korean'}
+                    {language.languageCode === 'zh' && 'Chinese'}
+                    {language.languageCode === 'ja' && 'Japanese'}
+                    {language.languageCode === 'es' && 'Spanish'}
+                  </Text>
+                </View>
+
+                {/* Empty State - No song selected */}
+                {!language.currentSong && (
+                  <View style={styles.musicEmptyState}>
+                    <Text style={styles.musicEmptyText}>
+                      Choose a song to start learning vocabulary
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.chooseSongButton}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        Alert.alert(
+                          'Coming Soon',
+                          'Song selection feature will be available soon!'
+                        );
+                      }}
+                    >
+                      <Text style={styles.chooseSongButtonText}>+ Choose Song</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Active State - Song selected */}
+                {language.currentSong && (
+                  <View style={styles.musicActiveState}>
+                    <View style={styles.currentSongInfo}>
+                      <Text style={styles.currentSongIcon}>🎵</Text>
+                      <View style={styles.currentSongText}>
+                        <Text style={styles.currentSongTitle}>{language.currentSong.title}</Text>
+                        <Text style={styles.currentSongArtist}>{language.currentSong.artist}</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.chooseSongButton}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        Alert.alert(
+                          'Coming Soon',
+                          'Song selection feature will be available soon!'
+                        );
+                      }}
+                    >
+                      <Text style={styles.chooseSongButtonText}>+ Choose Another Song</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+        </View>
+      )}
+
       {/* Coming Soon Features */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Coming Soon</Text>
-
-        <View style={styles.featureCard}>
-          <Text style={styles.featureIcon}>🎵</Text>
-          <View style={styles.featureContent}>
-            <Text style={styles.featureTitle}>Learn Through Music</Text>
-            <Text style={styles.featureDescription}>
-              Discover K-pop lyrics and learn Korean through your favorite songs
-            </Text>
-          </View>
-        </View>
 
         <View style={styles.featureCard}>
           <Text style={styles.featureIcon}>📚</Text>
@@ -719,17 +728,35 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   // Music Selection Section Styles
-  musicSection: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+  musicCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  musicSectionTitle: {
+  musicCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  musicLanguageFlag: {
+    fontSize: 24,
+    marginRight: 8,
+  },
+  musicLanguageName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 12,
   },
   musicEmptyState: {
     alignItems: 'center',
