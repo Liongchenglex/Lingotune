@@ -128,49 +128,40 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ langua
         language!.languageCode
       );
 
-      // Handle validation results
+      // Handle validation results - ALWAYS allow user to proceed
+      // Show informative warnings but never block
       if (validation.valid) {
-        // Language valid - proceed to save song
+        // Language valid - proceed directly
         await saveSong(song, lyrics, validation, lyricsData);
         onSongSelected(song.id);
-      } else if (validation.reason === 'medium_confidence_warning') {
-        // Medium confidence - show warning and let user choose
+      } else {
+        // Show friendly warning for any validation issue
+        let warningMessage = '';
+
+        if (validation.reason === 'wrong_language' && validation.detected && validation.detected !== 'unknown') {
+          warningMessage = `Don't worry - our AI isn't perfect! If you're confident this is the right language, feel free to add it.\n\nOur AI detected this song might be in ${getLanguageName(validation.detected)}, but you're learning ${getLanguageName(language!.languageCode)}.`;
+        } else if (validation.reason === 'low_confidence' || !validation.detected || validation.detected === 'unknown') {
+          warningMessage = `Don't let this stop you! If you know this song is in ${getLanguageName(language!.languageCode)}, go ahead and add it.\n\nOur AI couldn't confidently detect the language of this song.\n\nThis might be because:\n• The song uses slang or colloquial expressions\n• It mixes multiple languages\n• The lyrics are unique or poetic`;
+        } else if (validation.reason === 'medium_confidence_warning' && validation.detected && validation.detected !== 'unknown') {
+          warningMessage = `Our AI is ${formatConfidence(validation.confidence)} confident this song is in ${getLanguageName(validation.detected)}.\n\nLanguage detection isn't always accurate, especially with songs that use slang, loan words, or poetic language.`;
+        } else {
+          // Fallback for any other case
+          warningMessage = `Don't worry - this is common with songs! If you know this song is in ${getLanguageName(language!.languageCode)}, feel free to add it.\n\nOur language detection had some uncertainty with this song.`;
+        }
+
         Alert.alert(
-          '⚠️ Language Uncertain',
-          `This song might be in ${getLanguageName(validation.detected)}, but we're only ${formatConfidence(validation.confidence)} confident.\nIt may contain multiple languages or slang.\n\nDetected language: ${getLanguageName(validation.detected)} (${formatConfidence(validation.confidence)})\n\nWould you like to add it anyway?`,
+          '⚠️ Language Detection Note',
+          warningMessage + '\n\nWould you like to add this song?',
           [
             { text: 'Cancel', style: 'cancel', onPress: () => setSelectedSong(null) },
             {
-              text: 'Add Anyway',
+              text: 'Add Song',
               onPress: async () => {
                 await saveSong(song, lyrics, validation, lyricsData);
                 onSongSelected(song.id);
               },
             },
           ]
-        );
-      } else if (validation.reason === 'wrong_language') {
-        // Wrong language detected
-        Alert.alert(
-          '❌ Wrong Language Detected',
-          `This song appears to be in ${getLanguageName(validation.detected)}, but you're learning ${getLanguageName(language!.languageCode)}.\n\nDetected: ${getLanguageName(validation.detected)} (${formatConfidence(validation.confidence)})\nExpected: ${getLanguageName(language!.languageCode)}`,
-          [
-            { text: 'Try Another Song', onPress: () => setSelectedSong(null) },
-          ]
-        );
-      } else if (validation.reason === 'low_confidence') {
-        // Low confidence - reject
-        Alert.alert(
-          '❌ Language Uncertain',
-          `We're not confident about this song's language.\n\nDetected: ${getLanguageName(validation.detected)} (${formatConfidence(validation.confidence)})\nThis is too low to ensure quality vocabulary learning.\n\nPossible reasons:\n• Song mixes multiple languages\n• Heavy use of slang or loan words`,
-          [{ text: 'Try Another Song', onPress: () => setSelectedSong(null) }]
-        );
-      } else {
-        // Unknown language
-        Alert.alert(
-          '❌ Cannot Detect Language',
-          'We couldn\'t determine the language of this song\'s lyrics.\n\nThis might be because:\n• Lyrics are too short\n• The song is mostly instrumental sounds\n• The language is not supported',
-          [{ text: 'Try Another Song', onPress: () => setSelectedSong(null) }]
         );
       }
     } catch (err: any) {
@@ -217,7 +208,7 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ langua
         lyricsConfidence: validation.confidence,
         language: language.languageCode,
         addedAt: Timestamp.now(),
-      });
+      }, { merge: true });
 
       await batch.commit();
 
