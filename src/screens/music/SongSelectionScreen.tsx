@@ -201,6 +201,7 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ langua
         duration: song.duration,
         spotifyUri: song.spotifyUri,
         previewUrl: song.previewUrl,
+        lyrics: lyrics, // Add lyrics for analysis
         lyricsSource: lyricsData.source,
         geniusId: lyricsData.geniusId,
         geniusUrl: lyricsData.geniusUrl,

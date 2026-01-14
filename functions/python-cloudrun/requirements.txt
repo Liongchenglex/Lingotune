@@ -1,8 +1,9 @@
+# Flask for HTTP server
+flask==3.0.0
+gunicorn==21.2.0
+
 # Firebase Admin SDK
 firebase-admin==6.2.0
-
-# Firebase Functions for Python (2nd gen)
-firebase-functions==0.4.0
 
 # KoNLPy - Korean NLP library
 konlpy==0.6.0
@@ -10,5 +11,5 @@ konlpy==0.6.0
 # JPype1 - Java bridge for KoNLPy
 JPype1==1.4.1
 
-# HTTP client for dictionary APIs
+# HTTP client
 requests==2.31.0

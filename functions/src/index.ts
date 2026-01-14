@@ -21,3 +21,4 @@ export { generateProfile } from './generateProfile';
 // Music feature functions
 export { searchSongs } from './searchSongs';
 export { fetchLyrics } from './fetchLyrics';
+export { analyzeLyricsTrigger } from './analyzeLyricsTrigger';

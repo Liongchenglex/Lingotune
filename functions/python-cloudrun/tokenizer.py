@@ -8,15 +8,23 @@ from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
-# Initialize tokenizer (global to reuse across invocations)
+# Lazy initialize tokenizer (global to reuse across invocations)
 # KoNLPy Okt is better for informal/casual text (songs use slang)
-try:
-    from konlpy.tag import Okt
-    okt = Okt()
-    logger.info("KoNLPy Okt tokenizer initialized successfully")
-except ImportError as e:
-    logger.error(f"Failed to import KoNLPy: {str(e)}")
-    okt = None
+okt = None
+
+
+def _get_tokenizer():
+    """Lazy load KoNLPy Okt tokenizer"""
+    global okt
+    if okt is None:
+        try:
+            from konlpy.tag import Okt
+            okt = Okt()
+            logger.info("KoNLPy Okt tokenizer initialized successfully")
+        except ImportError as e:
+            logger.error(f"Failed to import KoNLPy: {str(e)}")
+            raise
+    return okt
 
 
 def tokenize_korean(lyrics: str) -> List[Dict]:
@@ -38,10 +46,10 @@ def tokenize_korean(lyrics: str) -> List[Dict]:
         RuntimeError: If KoNLPy is not available
         Exception: If tokenization fails
     """
-    if okt is None:
-        raise RuntimeError("KoNLPy Okt tokenizer not available")
-
     try:
+        # Get tokenizer (lazy loaded)
+        tokenizer = _get_tokenizer()
+
         # Split lyrics into lines
         lines = lyrics.strip().split('\n')
         logger.info(f"Tokenizing {len(lines)} lines")
@@ -59,7 +67,7 @@ def tokenize_korean(lyrics: str) -> List[Dict]:
             # pos() returns list of tuples: [("나", "Pronoun"), ("를", "Josa"), ...]
             # stem=False: Don't stem verbs (keep original form)
             # norm=False: Don't normalize (keep original spelling)
-            morphs = okt.pos(line, stem=False, norm=False)
+            morphs = tokenizer.pos(line, stem=False, norm=False)
 
             # Convert to structured format
             for morph, pos_tag in morphs:
