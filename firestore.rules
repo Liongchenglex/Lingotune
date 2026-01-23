@@ -17,6 +17,17 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Rate limiting collection - server-side only
+    // Users should NEVER read or write their own rate limits
+    // Only Firebase Functions can access this collection
+    match /rateLimits/{userId} {
+      allow read, write: if false; // No client access
+
+      match /actions/{action} {
+        allow read, write: if false; // No client access
+      }
+    }
+
     // User profile data - users can only access their own data
     match /users/{userId} {
       allow read: if isOwner(userId);
@@ -79,6 +90,25 @@ service cloud.firestore {
     match /leaderboards/{leaderboardId} {
       allow read: if isAuthenticated();
       allow write: if false; // Use Cloud Functions for updates
+    }
+
+    // ===== MUSIC FEATURE =====
+
+    // Songs collection - song metadata and lyrics info
+    // Users can read all songs, but can only write songs they add
+    match /songs/{songId} {
+      allow read: if isAuthenticated();
+      // Allow users to create/update song entries
+      // Songs are shared resources - any authenticated user can add them
+      allow create, update: if isAuthenticated();
+      allow delete: if false; // Never delete songs (shared resource)
+
+      // Analysis subcollection - Korean lyrics analysis results
+      // Read-only for authenticated users (written by Cloud Functions)
+      match /analysis/{analysisDoc} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Only Cloud Functions can write analysis
+      }
     }
 
     // ===== ONBOARDING FEATURE =====

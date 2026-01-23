@@ -86,7 +86,12 @@ export interface UserLanguage {
   goals?: string[]; // Extracted from AI profile
 
   // Music-based learning (Feature 3 - Dashboard)
-  currentSong?: CurrentSong; // Currently selected song for this language
+  songs?: Array<{
+    id: string;
+    title: string;
+    artist: string;
+    addedAt: Timestamp;
+  }>; // Array of song metadata (denormalized for performance)
 
   lastUpdated: Timestamp;
 }
