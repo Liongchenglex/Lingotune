@@ -10,6 +10,7 @@
 
 import * as functions from 'firebase-functions';
 import * as songsData from '../data/songs.json';
+import { checkRateLimit, RATE_LIMITS } from './rateLimiter';
 
 /**
  * Song data from JSON file
@@ -49,10 +50,10 @@ interface FetchLyricsResponse {
  * Error response interface
  */
 interface FetchLyricsError {
-  error: 'lyrics_not_found' | 'api_unavailable';
+  error: 'lyrics_not_found' | 'api_unavailable' | 'rate_limit_exceeded';
   message: string;
   retryable: boolean;
-  technicalDetails?: string;
+  retryAfter?: number; // Seconds to wait before retrying (for rate limits)
 }
 
 /**
@@ -76,6 +77,25 @@ export const fetchLyrics = functions.https.onCall(
         retryable: false,
       };
     }
+
+    // Rate limiting check
+    const rateLimitResult = await checkRateLimit(
+      context.auth.uid,
+      'fetchLyrics',
+      RATE_LIMITS.fetchLyrics
+    );
+
+    if (!rateLimitResult.allowed) {
+      console.log('ERROR: Rate limit exceeded for user:', context.auth.uid);
+      return {
+        error: 'rate_limit_exceeded',
+        message: 'Too many requests. Please try again later.',
+        retryable: true,
+        retryAfter: rateLimitResult.retryAfter,
+      };
+    }
+
+    console.log(`Rate limit check passed. Remaining: ${rateLimitResult.remaining}`);
 
     // Validate input
     if (!data.songId) {
@@ -102,7 +122,6 @@ export const fetchLyrics = functions.https.onCall(
           error: 'lyrics_not_found',
           message: 'Song not found. Please try another song.',
           retryable: false,
-          technicalDetails: `No song found with ID: ${data.songId}`,
         };
       }
 
@@ -115,7 +134,6 @@ export const fetchLyrics = functions.https.onCall(
           error: 'lyrics_not_found',
           message: 'Lyrics not available for this song.',
           retryable: false,
-          technicalDetails: `Song ${data.songId} has no lyrics or lyrics too short`,
         };
       }
 
@@ -140,7 +158,6 @@ export const fetchLyrics = functions.https.onCall(
         error: 'api_unavailable',
         message: 'Failed to load lyrics. Please try again.',
         retryable: true,
-        technicalDetails: error.message,
       };
     }
   }

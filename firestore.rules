@@ -17,6 +17,17 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Rate limiting collection - server-side only
+    // Users should NEVER read or write their own rate limits
+    // Only Firebase Functions can access this collection
+    match /rateLimits/{userId} {
+      allow read, write: if false; // No client access
+
+      match /actions/{action} {
+        allow read, write: if false; // No client access
+      }
+    }
+
     // User profile data - users can only access their own data
     match /users/{userId} {
       allow read: if isOwner(userId);

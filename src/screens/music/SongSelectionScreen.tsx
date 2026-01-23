@@ -186,6 +186,19 @@ export const SongSelectionScreen: React.FC<SongSelectionScreenProps> = ({ langua
       throw new Error('User not authenticated or profile not loaded');
     }
 
+    // Security: Enforce song quota to prevent abuse
+    const MAX_SONGS_PER_LANGUAGE = 50;
+    const currentSongCount = language.songs?.length || 0;
+
+    if (currentSongCount >= MAX_SONGS_PER_LANGUAGE) {
+      Alert.alert(
+        'Song Limit Reached',
+        `You've reached the maximum of ${MAX_SONGS_PER_LANGUAGE} songs for this language. Please remove some songs before adding more.`,
+        [{ text: 'OK' }]
+      );
+      throw new Error('Song quota exceeded');
+    }
+
     try {
       const db = getFirestore();
       const batch = writeBatch(db);

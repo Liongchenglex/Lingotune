@@ -50,6 +50,10 @@ def analyze_lyrics_endpoint():
         "language": "ko"
     }
     """
+    # Security: Limit input size to prevent resource exhaustion
+    MAX_LYRICS_LENGTH = 50000  # ~50KB, enough for longest songs
+    MAX_SONG_ID_LENGTH = 100    # Reasonable limit for song IDs
+
     try:
         # Get request data
         data = request.get_json()
@@ -70,6 +74,15 @@ def analyze_lyrics_endpoint():
 
         if language != 'ko':
             return jsonify({'error': f'Language {language} not supported yet'}), 400
+
+        # Security: Input size validation
+        if len(song_id) > MAX_SONG_ID_LENGTH:
+            logger.warning(f"Song ID too long: {len(song_id)} characters")
+            return jsonify({'error': 'Invalid song ID'}), 400
+
+        if len(lyrics) > MAX_LYRICS_LENGTH:
+            logger.warning(f"Lyrics too long: {len(lyrics)} characters (max {MAX_LYRICS_LENGTH})")
+            return jsonify({'error': f'Lyrics too long (maximum {MAX_LYRICS_LENGTH} characters)'}), 400
 
         logger.info(f"🎵 Starting analysis for song {song_id}")
 
