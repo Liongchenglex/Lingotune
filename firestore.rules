@@ -91,6 +91,13 @@ service cloud.firestore {
       // Songs are shared resources - any authenticated user can add them
       allow create, update: if isAuthenticated();
       allow delete: if false; // Never delete songs (shared resource)
+
+      // Analysis subcollection - Korean lyrics analysis results
+      // Read-only for authenticated users (written by Cloud Functions)
+      match /analysis/{analysisDoc} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Only Cloud Functions can write analysis
+      }
     }
 
     // ===== ONBOARDING FEATURE =====

@@ -1,10 +1,11 @@
 /**
  * LyricsScreen
  *
- * Displays song lyrics for the currently selected song.
- * Shows full lyrics in a scrollable view.
- *
- * Phase 2 will add vocabulary highlighting and learning features.
+ * Displays song lyrics with interactive analysis features:
+ * - Tokenized lyrics (tappable words)
+ * - Vocabulary details
+ * - Grammar pattern detection
+ * - Romanization
  */
 
 import React, { useState, useEffect } from 'react';
@@ -18,6 +19,11 @@ import {
 } from 'react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { useAnalysis, Token, GrammarPattern } from '../../hooks/useAnalysis';
+import { AnalysisStatusBanner } from '../../components/music/AnalysisStatusBanner';
+import { TokenizedLyrics } from '../../components/music/TokenizedLyrics';
+import { TokenDetailBottomSheet } from '../../components/music/TokenDetailBottomSheet';
+import { GrammarPatternBottomSheet } from '../../components/music/GrammarPatternBottomSheet';
 
 interface Song {
   id: string;
@@ -36,6 +42,13 @@ export const LyricsScreen: React.FC<LyricsScreenProps> = ({ songId, onBack }) =>
   const [lyrics, setLyrics] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Analysis data
+  const analysis = useAnalysis(songId);
+
+  // Bottom sheet state
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedGrammarPatterns, setSelectedGrammarPatterns] = useState<GrammarPattern[]>([]);
 
   useEffect(() => {
     if (songId) {
@@ -170,25 +183,48 @@ export const LyricsScreen: React.FC<LyricsScreenProps> = ({ songId, onBack }) =>
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
       >
-        <View style={styles.lyricsContainer}>
-          <Text style={styles.lyricsText}>{lyrics}</Text>
-        </View>
+        {/* Analysis Status Banner */}
+        <AnalysisStatusBanner analysis={analysis} />
 
-        {/* Phase 2 Placeholder */}
-        <View style={styles.phase2Notice}>
-          <Text style={styles.phase2Icon}>🎯</Text>
-          <Text style={styles.phase2Title}>Coming Soon: Vocabulary Learning</Text>
-          <Text style={styles.phase2Text}>
-            In the next phase, you'll be able to:
-          </Text>
-          <Text style={styles.phase2List}>
-            • Tap words to see translations{'\n'}
-            • Learn vocabulary from lyrics{'\n'}
-            • Track your progress{'\n'}
-            • Practice with flashcards
-          </Text>
+        {/* Lyrics Container */}
+        <View style={styles.lyricsContainer}>
+          {analysis.status === 'complete' && analysis.tokenization ? (
+            /* Interactive Tokenized Lyrics */
+            <TokenizedLyrics
+              tokens={analysis.tokenization.tokens}
+              grammarPatterns={analysis.grammar?.patterns || []}
+              romanizations={analysis.pronunciation?.romanizations || []}
+              vocabularyWords={analysis.vocabulary?.words || []}
+              onTokenPress={(token) => {
+                setSelectedToken(token);
+              }}
+              onGrammarPress={(patterns) => {
+                setSelectedGrammarPatterns(patterns);
+              }}
+            />
+          ) : (
+            /* Plain Lyrics Fallback */
+            <Text style={styles.lyricsText}>{lyrics}</Text>
+          )}
         </View>
       </ScrollView>
+
+      {/* Token Detail Bottom Sheet */}
+      <TokenDetailBottomSheet
+        visible={selectedToken !== null}
+        token={selectedToken}
+        vocabularyWords={analysis.vocabulary?.words || []}
+        onClose={() => {
+          setSelectedToken(null);
+        }}
+      />
+
+      {/* Grammar Pattern Bottom Sheet */}
+      <GrammarPatternBottomSheet
+        visible={selectedGrammarPatterns.length > 0}
+        patterns={selectedGrammarPatterns}
+        onClose={() => setSelectedGrammarPatterns([])}
+      />
     </View>
   );
 };
@@ -309,36 +345,5 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     color: '#1F2937',
     fontFamily: 'System',
-  },
-  phase2Notice: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    alignItems: 'center',
-  },
-  phase2Icon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  phase2Title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E40AF',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  phase2Text: {
-    fontSize: 14,
-    color: '#3B82F6',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  phase2List: {
-    fontSize: 14,
-    color: '#3B82F6',
-    lineHeight: 22,
-    textAlign: 'left',
   },
 });

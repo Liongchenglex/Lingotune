@@ -52,12 +52,6 @@ export default function MainNavigator() {
   const hasInProgressOnboarding = currentLanguage && currentLanguage.onboardingStatus === 'in_progress';
   const hasCompletedLanguage = userProfile?.languages.some(lang => lang.onboardingStatus === 'completed');
 
-  console.log('MainNavigator - languages count:', userProfile?.languages?.length || 0);
-  console.log('MainNavigator - hasNoLanguages:', hasNoLanguages);
-  console.log('MainNavigator - hasInProgressOnboarding:', hasInProgressOnboarding);
-  console.log('MainNavigator - hasCompletedLanguage:', hasCompletedLanguage);
-  console.log('MainNavigator - showingOnboarding:', showingOnboarding);
-
   // Handle starting/restarting onboarding
   const handleStartOnboarding = () => {
     // If user already has a language, skip welcome/language selection and go straight to test
@@ -80,7 +74,6 @@ export default function MainNavigator() {
 
   // NEW USER: No languages started → Show Welcome Screen
   if (!showingOnboarding && hasNoLanguages) {
-    console.log('MainNavigator - Showing Welcome Screen (new user, no languages)');
     return <WelcomeScreen onContinue={() => {
       setCurrentScreen('language-selection');
       setShowingOnboarding(true);
@@ -89,7 +82,6 @@ export default function MainNavigator() {
 
   // LYRICS VIEW: User is viewing song lyrics
   if (showingLyrics && viewingSongId) {
-    console.log('MainNavigator - Showing Lyrics View');
     return (
       <LyricsScreen
         songId={viewingSongId}
@@ -104,7 +96,6 @@ export default function MainNavigator() {
 
   // SONG SELECTION: User is choosing a song
   if (showingSongSelection && musicLanguage) {
-    console.log('MainNavigator - Showing Song Selection');
     return (
       <SongSelectionScreen
         language={musicLanguage}
@@ -124,7 +115,6 @@ export default function MainNavigator() {
 
   // PROFILE VIEW: User is viewing a specific language profile
   if (showingProfile && viewingLanguage) {
-    console.log('MainNavigator - Showing Profile View');
     const languageNameMap: Record<string, string> = {
       ko: 'Korean',
       zh: 'Chinese',
@@ -145,7 +135,6 @@ export default function MainNavigator() {
 
   // EXISTING USER: Has languages → Show Dashboard
   if (!showingOnboarding) {
-    console.log('MainNavigator - Showing Dashboard (showingOnboarding=false, has languages)');
     return (
       <DashboardScreen
         onResumeOnboarding={hasInProgressOnboarding ? handleStartOnboarding : undefined}
@@ -216,9 +205,6 @@ export default function MainNavigator() {
     case 'profile-generation':
       // Get the most recent test ID from the user's test history
       // After completeTest(), the language status is 'completed', so find the most recent completed language
-      console.log('profile-generation - Looking for test ID');
-      console.log('profile-generation - userProfile.languages:', JSON.stringify(userProfile?.languages, null, 2));
-
       const recentLanguage = userProfile?.languages
         .filter((l) => l.testHistory && l.testHistory.length > 0)
         .sort((a, b) => {
@@ -230,9 +216,6 @@ export default function MainNavigator() {
 
       const recentTestId = recentLanguage?.testHistory[recentLanguage.testHistory.length - 1];
 
-      console.log('profile-generation - Found recent language:', recentLanguage?.languageCode);
-      console.log('profile-generation - Recent test ID:', recentTestId);
-
       return (
         <ProfileGenerationScreen
           testId={testId || recentTestId || ''}
@@ -243,13 +226,11 @@ export default function MainNavigator() {
           }}
           onError={() => {
             // On error, go to dashboard (user can retry from there)
-            console.error('ProfileGenerationScreen error - going to dashboard');
             setShowingOnboarding(false);
             setCurrentScreen('welcome'); // Reset for next time
           }}
           onSkip={() => {
             // User chose to skip waiting - go to dashboard
-            console.log('ProfileGenerationScreen - User skipped to dashboard');
             setShowingOnboarding(false);
             setCurrentScreen('welcome'); // Reset for next time
           }}
@@ -271,14 +252,6 @@ export default function MainNavigator() {
           languageName={selectedLanguage ? languageMap[selectedLanguage] : 'Korean'}
           onStartLearning={() => {
             // Return to dashboard after completing onboarding
-            console.log('='.repeat(80));
-            console.log('ProfileSummary - onStartLearning called');
-            console.log('ProfileSummary - userProfile:', userProfile?.uid);
-            console.log('ProfileSummary - userProfile.languages:', userProfile?.languages.length);
-            console.log('ProfileSummary - languages array:', JSON.stringify(userProfile?.languages, null, 2));
-            console.log('ProfileSummary - hasNoLanguages:', hasNoLanguages);
-            console.log('ProfileSummary - SETTING showingOnboarding to FALSE');
-            console.log('='.repeat(80));
             setShowingOnboarding(false);
             setCurrentScreen('welcome'); // Reset for next time
           }}
